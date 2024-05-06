@@ -9,12 +9,8 @@
 
 import router from '@adonisjs/core/services/router'
 
-router.get('/', async () => {
-    return {
-        hello: 'world',
-    }
-})
 
 router.group(() => {
-    router.get('/', '#controllers/users_controller.get');
-}).prefix('main')
+    router.get('/', '#controllers/users_controller.getUsers');
+    router.post('/create', '#controllers/users_controller.store');
+}).prefix('users')
