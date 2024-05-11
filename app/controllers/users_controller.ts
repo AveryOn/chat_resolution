@@ -23,10 +23,11 @@ export default class UsersController {
     // Получить всех пользователей
     async getUsers({ request, response, auth }: HttpContext) {
         try {
+            const transation = await db.transaction();
             await auth.authenticate();
             auth.authenticate()
-            const params = request.qs();;
-            const users = await db
+            const params = request.qs();
+            const users = await transation
                 .query()
                 .select(
                     'id',
