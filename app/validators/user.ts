@@ -4,12 +4,8 @@ import vine from '@vinejs/vine';
 export const validBodyUser = vine.compile(
     vine.object({
         password: vine.string().trim(),
-        full_name: vine.string().trim().maxLength(255),
-        login: vine.string().unique(async (db: Database, value: string, _) => {
-            const login = await db.from('users').where('login', value).first();
-            if(login) return false;
-            else return true;
-        }),
+        name: vine.string().trim().maxLength(255),
+        lastname: vine.string().trim().maxLength(255),
         email: vine.string().unique(async (db: Database, value: string, _) => {
             const login = await db.from('users').where('email', value).first();
             if(login) return false;

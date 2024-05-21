@@ -11,7 +11,7 @@ export default class UsersController {
         try {
             const data = request.all();
             const validData = await validBodyUser.validate(data);
-            const user: User = await User.create({ ...validData });
+            const user: User = await User.create({ ...validData })
             const token = await User.accessTokens.create(user);
             response.send({ user, token });
         } catch (err) {
