@@ -14,12 +14,15 @@ import router from '@adonisjs/core/services/router';
 
 // AUTH ROUTES
 router.group(() => {
-    router.post('/', '#controllers/auth_controller.confirmCredenials')
+    router.post('/', '#controllers/auth_controller.confirmCredenials');
+    router.delete('/logout', '#controllers/auth_controller.logout');
 }).prefix('auth')
 
 // USERS ROUTES
 router.group(() => {
-    router.post('/create', '#controllers/users_controller.store');
+    router.post('/create', '#controllers/users_controller.store');  // Create
+    router.put('/:user_id/update', '#controllers/users_controller.updateUser')  // Update
+    router.delete('/:user_id/delete', '#controllers/users_controller.deleteUser')  // Delete
 }).prefix('users')
 
 // CHATS ROUTES
