@@ -7,8 +7,8 @@ export const validBodyUser = vine.compile(
         name: vine.string().trim().maxLength(255),
         lastname: vine.string().trim().maxLength(255),
         email: vine.string().unique(async (db: Database, value: string, _) => {
-            const login = await db.from('users').where('email', value).first();
-            if(login) return false;
+            const email = await db.from('users').where('email', value).first();
+            if(email) return false;
             else return true;
         }),
 
