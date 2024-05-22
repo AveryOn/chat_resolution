@@ -19,6 +19,7 @@ router.group(() => {
 // USERS ROUTES
 router.group(() => {
     router.get('/', '#controllers/users_controller.getUsers');  // Get users
+    router.get('/:id', '#controllers/users_controller.getUserById');  // Get user BY id
     router.post('/create', '#controllers/users_controller.store');  // Create
     router.put('/:user_id/update', '#controllers/users_controller.updateUser')  // Update
     router.delete('/:user_id/delete', '#controllers/users_controller.deleteUser')  // Delete
@@ -26,8 +27,13 @@ router.group(() => {
 
 // CHATS ROUTES
 router.group(() => {
-    router.get('/get-by-user-id/:userId', '#controllers/chats_controller.getChats')
+    router.get('/get-by-user-id/:userId', '#controllers/chats_controller.getChats');
     router.post('/create', '#controllers/chats_controller.store');
 }).prefix('chats');
+
+// MESsAGES ROUTES
+router.group(() => {
+    // ...
+}).prefix('messages')
 
 

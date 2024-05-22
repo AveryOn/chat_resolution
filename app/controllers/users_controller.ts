@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { HttpContext } from "@adonisjs/core/http";
 import db from "@adonisjs/lucid/services/db";
-import { validBodyUser, validBodyUserPut, validParamsUsersGet } from "#validators/user";
+import { validBodyUser, validBodyUserPut, validParamsUsersGet, validPathParamsUserGet } from "#validators/user";
 import User from "#models/user";
 import { AccessToken } from "@adonisjs/auth/access_tokens";
 import { UserAndToken, UsersPaginator } from '#types/user_types';
@@ -41,7 +41,7 @@ export default class UsersController {
                     .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at', 'deleted_at'])
                     .offset(compOffset())
                     .limit(paginator.perPage);
-            } 
+            }
             // Если пагинатор НЕ определен, то получаем всех пользователей
             else {
                 users = await User
@@ -58,6 +58,37 @@ export default class UsersController {
         } catch (err) {
             await trx.rollback();
             console.error(`users_controller: getUsers  => ${err}`);
+            response.abort({
+                meta: { status: 'error', code: 400, url: request.url(true) },
+                data: err.messages ?? 'Bad request',
+            })
+        }
+    }
+
+    // Получение пользователя по ID
+    async getUserById({ request, response, auth }: HttpContext) {
+        const trx = await db.transaction();
+        try {
+            // Аутентификация
+            await auth.authenticate();
+            const { id: userId } = await validPathParamsUserGet.validate(request.params());
+
+            // Получение пользователя по ID
+            const user = await User
+                .query({ client: trx })
+                .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at', 'deleted_at'])
+                .where('id', userId)
+                .first();
+                
+            await trx.commit();
+
+            // Формируем ответ для клиента
+            response.send({
+                meta: { status: 'success', code: 200, url: request.url(true) },
+                data: user,
+            });
+        } catch (err) {
+            console.error(`users_controller: getUserById  => ${err}`);
             response.abort({
                 meta: { status: 'error', code: 400, url: request.url(true) },
                 data: err.messages ?? 'Bad request',
