@@ -27,13 +27,13 @@ router.group(() => {
 
 // CHATS ROUTES
 router.group(() => {
-    router.get('/get-by-user-id/:userId', '#controllers/chats_controller.getChats');
     router.post('/create', '#controllers/chats_controller.store');
+    router.put('/:id/update', '#controllers/chats_controller.updateChat');
 }).prefix('chats');
 
 // MESsAGES ROUTES
 router.group(() => {
     // ...
-}).prefix('messages')
+}).prefix('messages');
 
 
