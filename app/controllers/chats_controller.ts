@@ -45,7 +45,6 @@ export default class ChatsController {
         }
     }
 
-
     // Получение всех чатов для пользователя
     async getChats({ request, response, auth }: HttpContext) {
         const trx = await db.transaction();

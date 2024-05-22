@@ -36,7 +36,7 @@ router.group(() => {
 
 // MESsAGES ROUTES
 router.group(() => {
-    // ...
+    router.post('/create', '#controllers/messages_controller.store')
 }).prefix('messages');
 
 

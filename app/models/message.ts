@@ -10,13 +10,16 @@ export default class Message extends BaseModel {
     declare id: number;
 
     @column()
-    declare previewMessage: string;
+    declare from_user_id: number
 
     @column()
-    declare creator: number;
+    declare to_user_id: number;
 
     @column()
-    declare visible: boolean;
+    declare chatId: number;
+
+    @column()
+    declare content: string;
 
     @column.dateTime({ autoCreate: true })
     declare createdAt: DateTime;
