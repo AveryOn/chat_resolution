@@ -27,8 +27,10 @@ router.group(() => {
 
 // CHATS ROUTES
 router.group(() => {
+    router.get('/:id', '#controllers/chats_controller.getChatById');
     router.post('/create', '#controllers/chats_controller.store');
     router.put('/:id/update', '#controllers/chats_controller.updateChat');
+    router.delete('/:id/delete', '#controllers/chats_controller.deleteChat');
 }).prefix('chats');
 
 // MESsAGES ROUTES

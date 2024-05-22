@@ -21,3 +21,11 @@ export const validBodyPutChat = vine.compile(vine.object({
     preview_message: vine.string().minLength(1).use(cropMessage({ max: 47 })).optional(),
     visible: vine.boolean().optional(),
 }));
+
+export const validParamsDeleteChat = vine.compile(vine.object({
+    id: vine.number().positive(),
+}));
+
+export const validParamsGetChat = vine.compile(vine.object({
+    id: vine.number().positive(),
+}));
