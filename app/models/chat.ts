@@ -9,7 +9,7 @@ export default class Chat extends BaseModel {
     declare id: number;
 
     @column()
-    declare previewMessage: string;
+    declare previewMessage: string | null;
 
     @column()
     declare creator: number;

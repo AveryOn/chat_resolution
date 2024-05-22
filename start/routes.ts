@@ -36,7 +36,11 @@ router.group(() => {
 
 // MESsAGES ROUTES
 router.group(() => {
-    router.post('/create', '#controllers/messages_controller.store')
+    router.get('/message/:id', '#controllers/messages_controller.getMessageById');
+    router.get('/chat/:chat_id', '#controllers/messages_controller.getMessages');
+    router.post('/create', '#controllers/messages_controller.store');
+    router.put('/:id/update', '#controllers/messages_controller.updateMessage');
+    router.delete('/:id/delete', '#controllers/messages_controller.deleteMessage');
 }).prefix('messages');
 
 
