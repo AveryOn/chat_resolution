@@ -27,6 +27,7 @@ router.group(() => {
 
 // CHATS ROUTES
 router.group(() => {
+    router.get('/', '#controllers/chats_controller.getChats');
     router.get('/:id', '#controllers/chats_controller.getChatById');
     router.post('/create', '#controllers/chats_controller.store');
     router.put('/:id/update', '#controllers/chats_controller.updateChat');

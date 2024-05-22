@@ -7,6 +7,7 @@ import {
     validBodyPutChat,
     validParamsDeleteChat,
     validParamsGetChat,
+    validParamsGetChats,
 } from '#validators/chat_valide';
 import { DateTime } from 'luxon';
 
@@ -45,37 +46,53 @@ export default class ChatsController {
     }
 
 
-    // Получение чата по ID 
-    // async getChatById({ request, response, auth }: HttpContext) {
-    //     const trx = await db.transaction();
-    //     try {
-    //         await auth.authenticate();
-    //         const { id } = request.params();
-    //         const { id: chatId } = await validParamsGetChat.validate({ id });
+    // Получение всех чатов для пользователя
+    async getChats({ request, response, auth }: HttpContext) {
+        const trx = await db.transaction();
+        try {
 
-    //         // Получение чата по ID
-    //         let chat: Chat;
-    //         try {
-    //             chat = await Chat.findOrFail(chatId, { client: trx });
-    //             // Если временная метка удаления есть то чат считается удаленным
-    //             if (chat.deletedAt) throw { status: 404 }
-    //         } catch (err) {
-    //             if (err?.status === 404) throw {
-    //                 meta: { status: 'error', code: 404, url: request.url(true) },
-    //                 data: 'Чат c таким ID не найден',
-    //             }
-    //         }
-    //         await trx.commit();
-    //         response.send({
-    //             meta: { status: 'success', code: 200, url: request.url(true) },
-    //             data: chat!.toJSON(),
-    //         })
-    //     } catch (err) {
-    //         await trx.rollback();
-    //         console.error(`chats_controller: getChatById  => ${err?.data ?? err}`);
-    //         response.abort(err, err?.meta.code);
-    //     }
-    // }
+            // Аутентификация
+            const user: User = await auth.authenticate();
+
+            // Получение параметров запроса
+            const queries = request.qs();
+            let validQueries;
+            try {
+                validQueries = await validParamsGetChats.validate(queries);
+            } catch (err) {
+                // Если валидация параметров запроса не прошла
+                throw {
+                    meta: { status: 'error', code: 422, url: request.url(true) },
+                    data: 'Некорректные данные запроса',
+                }
+            }
+
+            // Получение списка чатов
+            let chats: Array<Chat>;
+            try {
+                chats = await user.related('chats')
+                    .query()
+                    .select('*')
+                    .whereNull('chats.deleted_at')  // Исключаем из запроса удаленные чаты
+                    .where('chats.visible', validQueries.is_visible ?? true);
+            } catch (err) {
+                throw {
+                    meta: { status: 'error', code: 400, url: request.url(true) },
+                    data: 'Не удалось получить чаты',
+                }
+            }
+
+            await trx.commit();
+            response.send({
+                meta: { status: 'success', code: 200, url: request.url(true) },
+                data: chats,
+            })
+        } catch (err) {
+            await trx.rollback();
+            console.error(`chats_controller: getChats  => ${err?.data ?? err}`);
+            response.abort(err, err?.meta?.code ?? 500);
+        }
+    }
 
     // Создание нового чата
     async store({ request, response, auth }: HttpContext) {

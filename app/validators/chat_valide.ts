@@ -29,3 +29,8 @@ export const validParamsDeleteChat = vine.compile(vine.object({
 export const validParamsGetChat = vine.compile(vine.object({
     id: vine.number().positive(),
 }));
+
+export const validParamsGetChats = vine.compile(vine.object({
+    is_visible: vine.boolean().optional(),
+}));
+
