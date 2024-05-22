@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http';
 import { validCredentials } from '#validators/auth_valide'
 import User from '#models/user';
 import { AccessToken } from '@adonisjs/auth/access_tokens';
+import { UserAndToken } from '#types/user_types';
 
 export default class AuthControllersController {
 
@@ -47,7 +48,6 @@ export default class AuthControllersController {
     // Выход из системы. Разлогинится
     async logout({request, response, auth}: HttpContext) {
         try {
-            type UserAndToken = User & {currentAccessToken: AccessToken}; 
             const user: UserAndToken = await auth.authenticate();
             const token = user.currentAccessToken;
             await User.accessTokens.delete(user, token.identifier);

@@ -26,3 +26,8 @@ export const validBodyUserPut = vine.compile(vine.object({
         else return true;
     }).optional(),
 }));
+
+export const validParamsUsersGet = vine.compile(vine.object({
+    page: vine.number().positive().optional(),
+    per_page: vine.number().positive().optional(),
+}))

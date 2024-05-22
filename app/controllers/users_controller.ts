@@ -1,11 +1,69 @@
 import { DateTime } from 'luxon';
 import { HttpContext } from "@adonisjs/core/http";
 import db from "@adonisjs/lucid/services/db";
-import { validBodyUser, validBodyUserPut } from "#validators/user";
+import { validBodyUser, validBodyUserPut, validParamsUsersGet } from "#validators/user";
 import User from "#models/user";
 import { AccessToken } from "@adonisjs/auth/access_tokens";
+import { UserAndToken, UsersPaginator } from '#types/user_types';
+import { initUserPaginator } from '#utils/meta_utils';
 
 export default class UsersController {
+
+    // Получить всех пользователей
+    async getUsers({ request, response, auth }: HttpContext) {
+        const trx = await db.transaction();
+        try {
+
+            // Аутентификация
+            await auth.authenticate();
+
+            // Валидация параметров запроса
+            const params = await validParamsUsersGet.validate(request.qs());
+
+            // Пагинатор не обязателен
+            let paginator: UsersPaginator | null = null;
+
+            // Если нет параметров запроса то пагинатор не инициализируется
+            if (params?.page && params?.per_page) {
+                paginator = await initUserPaginator(params.page, params.per_page);
+            }
+
+            let users: User[];
+            // Если объект пагинатора определен, то получаем пользователей согласно правилам пагинации
+            if (paginator) {
+                function compOffset() {
+                    if (paginator) return (paginator.currentPage - 1) * paginator.perPage;
+                    else return 0;
+                }
+
+                users = await User
+                    .query({ client: trx })
+                    .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at', 'deleted_at'])
+                    .offset(compOffset())
+                    .limit(paginator.perPage);
+            } 
+            // Если пагинатор НЕ определен, то получаем всех пользователей
+            else {
+                users = await User
+                    .query({ client: trx })
+                    .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at', 'deleted_at'])
+            }
+
+            // Формируем ответ для клиента
+            response.send({
+                meta: { status: 'success', code: 200, url: request.url(true), paginator },
+                data: { users },
+            });
+            await trx.commit();
+        } catch (err) {
+            await trx.rollback();
+            console.error(`users_controller: getUsers  => ${err}`);
+            response.abort({
+                meta: { status: 'error', code: 400, url: request.url(true) },
+                data: err.messages ?? 'Bad request',
+            })
+        }
+    }
 
     // Создание пользователя
     async store({ request, response }: HttpContext) {
@@ -20,12 +78,15 @@ export default class UsersController {
             delete userReadyJSON.password;
             console.log(userReadyJSON);
             response.send({
-                meta: { status: 'success', code: 200 },
+                meta: { status: 'success', code: 200, url: request.url(true) },
                 data: { user: userReadyJSON, access_token: token },
             });
         } catch (err) {
             console.error(`users_controller: store  => ${err}`);
-            response.abort({ error: err });
+            response.abort({
+                meta: { status: 'error', code: 400, url: request.url(true) },
+                data: err.messages ?? 'Bad request',
+            })
         }
     }
 
@@ -68,11 +129,16 @@ export default class UsersController {
         try {
             const trx = await db.transaction();
             // Аутентификация
-            const user: User = await auth.authenticate();
+            const user: UserAndToken = await auth.authenticate();
+            const token: AccessToken = user.currentAccessToken;
+
 
             // Установка deleted_at
             user.deletedAt = DateTime.local();
             await user.save();
+
+            // Удаления токена доступа
+            await User.accessTokens.delete(user, token.identifier);
             await trx.commit();
 
             // Формирование ответа клиенту
@@ -89,32 +155,5 @@ export default class UsersController {
         }
     }
 
-    // Получить всех пользователей
-    async getUsers({ request, response, auth }: HttpContext) {
-        try {
-            const transation = await db.transaction();
-            await auth.authenticate();
-            auth.authenticate()
-            const params = request.qs();
-            const users = await transation
-                .query()
-                .select(
-                    'id',
-                    'full_name',
-                    'email',
-                    'login',
-                    'created_at',
-                    'updated_at'
-                )
-                .from('users')
-                .paginate(
-                    params.page ?? 1,
-                    params.per_page ?? 20
-                );
-            response.send(users);
-        } catch (err) {
-            console.error(`users_controller: store  => ${err}`);
-            response.abort({ error: err });
-        }
-    }
+
 }

@@ -28,6 +28,7 @@
     "#abilities/*": "./app/abilities/*.js",
     "#database/*": "./database/*.js",
     "#types/*": "./types/*.js",
+    "#utils/*": "./utils/*.js",
     "#start/*": "./start/*.js",
     "#tests/*": "./tests/*.js",
     "#config/*": "./config/*.js"
