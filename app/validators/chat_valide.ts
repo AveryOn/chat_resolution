@@ -32,5 +32,7 @@ export const validParamsGetChat = vine.compile(vine.object({
 
 export const validParamsGetChats = vine.compile(vine.object({
     is_visible: vine.boolean().optional(),
+    page: vine.number().positive().min(1).optional(),
+    per_page: vine.number().positive().min(1).optional(),
 }));
 

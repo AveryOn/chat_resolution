@@ -13,6 +13,8 @@ import Message from '#models/message';
 import { DateTime } from 'luxon';
 import { initMessagesPaginator } from '#utils/meta_utils';
 import { MessagesPaginator } from '#types/message_types';
+import { subscribeAndSend } from '#socket/services/messages';
+import { createForwardingsRows, fetchForwardedMessages, fetchMessagesBasicWithPaginator, fetchMessagesBasicWithoutPaginator } from '#utils/messages_utils';
 
 export default class MessagesController {
 
@@ -28,10 +30,10 @@ export default class MessagesController {
             let message: Message;
             try {
                 message = await Message
-                .query({ client: trx })
-                .select(['*'])
-                .where('id', messageId)
-                .firstOrFail();
+                    .query({ client: trx })
+                    .select(['*'])
+                    .where('id', messageId)
+                    .firstOrFail();
             } catch (err) {
                 throw {
                     meta: { status: 'error', code: 500, url: request.url(true) },
@@ -39,7 +41,7 @@ export default class MessagesController {
                 }
             }
             // Если пользователь не является участников сообщения то он его не получит
-            if(user.id !== message.from_user_id && user.id !== message.to_user_id) {
+            if (user.id !== message.from_user_id && user.id !== message.to_user_id) {
                 throw {
                     meta: { status: 'error', code: 404, url: request.url(true) },
                     data: { preivew: "Сообщение не найдено" },
@@ -84,22 +86,11 @@ export default class MessagesController {
             let messages: Array<Message>;
             // Если объект пагинатора определен, то получаем сообщения согласно правилам пагинации
             if (paginator) {
-                function compOffset() {
-                    if (paginator) return (paginator.currentPage - 1) * paginator.perPage;
-                    else return 0;
-                }
-                messages = await Message
-                    .query({ client: trx })
-                    .select(['*'])
-                    .where('chat_id', validParams!.chat_id)
-                    .offset(compOffset())
-                    .limit(paginator.perPage);
+                messages = await fetchMessagesBasicWithPaginator(validParams!.chat_id, paginator);
             }
             // Если пагинатор НЕ определен, то получаем все сообщения
             else {
-                messages = await Message
-                    .query({ client: trx })
-                    .select(['*']);
+                messages = await fetchMessagesBasicWithoutPaginator(validParams!.chat_id);
             }
             await trx.commit();
             response.send({
@@ -113,9 +104,9 @@ export default class MessagesController {
         }
     }
 
+
     // Создание нового сообщения
     async store({ request, response, auth }: HttpContext) {
-        const trx = await db.transaction();
         try {
             // Аутентификация
             const user: User = await auth.authenticate();
@@ -123,59 +114,91 @@ export default class MessagesController {
             // Получение данных запроса и их валидация
             let validData;
             try {
-                const rawData = request.only(['from_user_id', 'to_user_id', 'chat_id', 'content']);
-                validData = await validateMessageBodyCreation.validate(rawData);
+                const rawData = request.only(['from_user_id', 'to_user_id', 'chat_id', 'content', 'forwarded_ids']);
+                const rawQueries = request.qs();
+                validData = await validateMessageBodyCreation.validate({ ...rawData, ...rawQueries });
             } catch (err) {
                 if (err?.messages) throw {
                     meta: { status: 'error', code: err?.status ?? 422, url: request.url(true) },
                     data: { messages: err?.messages, preview: 'Проверьте корректность отправляемых данных' },
                 }
             }
+            
             // Проверка на то чтобы ID создателя сообщения сопоставлялось с полем from_user_id и не было равно to_user_id
             if (validData && (user.id !== validData.from_user_id || user.id === validData.to_user_id)) throw {
                 meta: { status: 'error', code: 422, url: request.url(true) },
                 data: { preview: 'Убедитесь, что вы передаете правильные from_user_id и to_user_id поля' },
             }
-
             // Создание нового экземпляра сообщения
-            const message: Message = new Message();
+            const message: Message | Message & { forwardedMessages: Array<Message> } = new Message();
             message.content = validData!.content;
+            if(validData!.forwarding === true && validData!.chat_id !== null) {
+                message.isForwarding = true;
+            }
+            let chat: Chat;
             try {
-                const chat: Chat = await user.related('chats')
-                    .query()
-                    .select('*')
-                    .whereNull('chats.deleted_at')  // Исключаем из запроса удаленные чаты
-                    .where('chats.id', validData!.chat_id)
-                    .firstOrFail();
-                const toUser: User = await User.findOrFail(validData!.to_user_id, { client: trx })
-
+                // Если поле chat_id равно null, значит необходимо создать новый чат
+                if (validData!.chat_id === null) {
+                    chat = await Chat.create({
+                        creator: validData!.from_user_id,
+                        visible: true,
+                    });
+                    // Привязываем чат к его участникам
+                    if (validData!.to_user_id) {
+                        await chat.related('users').attach([validData!.from_user_id, validData!.to_user_id]);
+                    } else {
+                        await chat.related('users').attach([validData!.from_user_id]);
+                    }
+                }
+                // Если поле chat_id есть то получаем существующий чат 
+                else {
+                    chat = await user.related('chats')
+                        .query()
+                        .select('*')
+                        .whereNull('chats.deleted_at')  // Исключаем из запроса удаленные чаты
+                        .where('chats.id', validData!.chat_id)
+                        .firstOrFail();
+                }
+                const toUser: User = await User.findOrFail(validData!.to_user_id);
                 await message.related('chat').associate(chat);
                 await message.related('toUser').associate(toUser);
                 await message.related('fromUser').associate(user);
-                await message.save();
+                // await message.save();
                 await message.load('chat');
-
-                // Обновление preview_message для Чата
-                let previewMessage: string;
-                if (validData!.content.length >= 50) {
-                    previewMessage = validData!.content.substring(0, 47) + '...';
-                } else previewMessage = validData!.content;
-                chat.previewMessage = previewMessage;
-                await chat.save();
             } catch (err) {
                 throw err;
-                // if (err?.messages) throw {
-                //     meta: { status: 'error', code: err?.status ?? 422, url: request.url(true) },
-                //     data: { messages: err?.messages, preview: 'Проверьте правильность отправляемых данных' },
-                // }
             }
-            await trx.commit();
+
+            let forwardedMessages: Array<Message>
+            try {
+                // Если создаваемое сообщение является пересылающим другие сообщения
+                // (Создать пересылаемое сообщение можно только в существующем чате)
+                if (validData!.forwarding === true && validData!.chat_id && validData!.forwarded_ids) {
+                    await createForwardingsRows(message, validData!.forwarded_ids);
+                    // forwardedMessages = await fetchForwardedMessages(validData!.forwarded_ids);
+                    forwardedMessages = [];
+                }
+            } catch (err) {
+                throw {
+                    meta: { status: 'error', code: err.status ?? 500, url: request.url(true) },
+                    data: err,
+                }
+            }
+            let readyMessage;
+            if(forwardedMessages!) {
+                readyMessage = message.toJSON();
+                readyMessage.forwardedMessage = forwardedMessages;
+            } 
+            else {
+                readyMessage = message;
+            }
+            // Отправка нового сообщения другому пользователю по вебсокету
+            await subscribeAndSend(validData!.from_user_id, validData!.to_user_id, chat.id, message);
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
-                data: message,
+                data: readyMessage,
             })
         } catch (err) {
-            await trx.rollback();
             console.error(`messages_controller: store  => ${err?.data ?? err}`);
             response.abort(err, err?.meta?.code ?? 500);
         }

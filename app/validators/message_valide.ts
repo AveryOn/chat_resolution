@@ -3,8 +3,10 @@ import vine from '@vinejs/vine';
 export const validateMessageBodyCreation = vine.compile(vine.object({
     from_user_id: vine.number().positive(),
     to_user_id: vine.number().positive(),
-    chat_id: vine.number().positive(),
+    chat_id: vine.number().positive().nullable(),
     content: vine.string(),
+    forwarded_ids: vine.array(vine.number().positive().min(1)).minLength(1).maxLength(10).optional(),
+    forwarding: vine.boolean().optional(), // query
 }));
 
 export const validateMessageBodyPut = vine.compile(vine.object({

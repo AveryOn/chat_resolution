@@ -10,6 +10,8 @@ import {
     validParamsGetChats,
 } from '#validators/chat_valide';
 import { DateTime } from 'luxon';
+import { ChatsPaginator } from '#types/chat_types';
+import { initChatsPaginator } from '#utils/meta_utils';
 
 export default class ChatsController {
 
@@ -17,8 +19,11 @@ export default class ChatsController {
     async getChatById({ request, response, auth }: HttpContext) {
         const trx = await db.transaction();
         try {
+
+            // Аутентификация
             await auth.authenticate();
             const { id } = request.params();
+            // Валидация параметров запроса
             const { id: chatId } = await validParamsGetChat.validate({ id });
 
             // Получение чата по ID
@@ -66,24 +71,79 @@ export default class ChatsController {
                 }
             }
 
+            // Пагинатор не обязателен
+            let paginator: ChatsPaginator | null = null;
+
+            // Если нет параметров запроса то пагинатор не инициализируется
+            if (validQueries!.page && validQueries!.per_page) {
+                paginator = await initChatsPaginator(validQueries!.page, validQueries!.per_page);
+            }
+
             // Получение списка чатов
             let chats: Array<Chat>;
-            try {
-                chats = await user.related('chats')
-                    .query()
-                    .select('*')
-                    .whereNull('chats.deleted_at')  // Исключаем из запроса удаленные чаты
-                    .where('chats.visible', validQueries.is_visible ?? true);
-            } catch (err) {
-                throw {
-                    meta: { status: 'error', code: 400, url: request.url(true) },
-                    data: 'Не удалось получить чаты',
+            // Если пагинатор определен то получаем список сущностей по пагинации
+            if (paginator) {
+                function compOffset() {
+                    if (paginator) return (paginator.currentPage - 1) * paginator.perPage;
+                    else return 0;
+                }
+                try {
+                    // Получить пользователя по ID и загрузить его чаты вместе с пользователями этих чатов
+                    const fecthedUser = await User.query({ client: trx })
+                        .where('id', user.id)
+                        .preload('chats', (chatsQuery) => {
+                            chatsQuery
+                                .select(['id', 'creator', 'created_at'])
+                                .whereNull('chats.deleted_at')
+                                .preload('users', (usersQuery) => {
+                                    usersQuery
+                                        .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
+                                        .whereNull('users.deleted_at')
+                                        .whereNot('users.id', user.id)
+                                })
+                                .offset(compOffset())
+                                .limit(paginator.perPage);
+                        })
+                        .firstOrFail();
+
+                    chats = fecthedUser.chats;
+                } catch (err) {
+                    throw {
+                        meta: { status: 'error', code: 400, url: request.url(true) },
+                        data: 'Не удалось получить чаты [with pagination]',
+                    }
+                }
+            } else {
+                try {
+                    // Получить пользователя по ID и загрузить его чаты вместе с пользователями этих чатов
+                    const fecthedUser = await User.query({ client: trx })
+                        .where('id', user.id)
+                        .preload('chats', (chatsQuery) => {
+                            chatsQuery
+                                .select(['id', 'creator', 'created_at'])
+                                .whereNull('chats.deleted_at')
+                                .preload('users', (usersQuery) => {
+                                    usersQuery
+                                        .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
+                                        .whereNull('users.deleted_at')
+                                        .whereNot('users.id', user.id)
+                                });
+                        })
+                        .firstOrFail();
+
+                    chats = fecthedUser.chats;
+                } catch (err) {
+                    throw {
+                        meta: { status: 'error', code: 400, url: request.url(true) },
+                        data: 'Не удалось получить чаты [without pagination]',
+                    }
                 }
             }
 
+
             await trx.commit();
             response.send({
-                meta: { status: 'success', code: 200, url: request.url(true) },
+                meta: { status: 'success', code: 200, url: request.url(true), paginator },
                 data: chats,
             })
         } catch (err) {

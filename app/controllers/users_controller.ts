@@ -15,7 +15,7 @@ export default class UsersController {
         try {
 
             // Аутентификация
-            await auth.authenticate();
+            const user: User = await auth.authenticate();
 
             // Валидация параметров запроса
             const params = await validParamsUsersGet.validate(request.qs());
@@ -38,7 +38,8 @@ export default class UsersController {
 
                 users = await User
                     .query({ client: trx })
-                    .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at', 'deleted_at'])
+                    .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
+                    .whereNot('id', user.id)
                     .offset(compOffset())
                     .limit(paginator.perPage);
             }
@@ -46,7 +47,8 @@ export default class UsersController {
             else {
                 users = await User
                     .query({ client: trx })
-                    .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at', 'deleted_at'])
+                    .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
+                    .whereNot('id', user.id)
             }
 
             // Формируем ответ для клиента
