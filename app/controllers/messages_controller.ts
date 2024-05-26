@@ -15,6 +15,7 @@ import { initMessagesPaginator } from '#utils/meta_utils';
 import { MessagesPaginator } from '#types/message_types';
 import { subscribeAndSend } from '#socket/services/messages';
 import { createForwardingsRows, fetchForwardedMessages, fetchMessagesBasicWithPaginator, fetchMessagesBasicWithoutPaginator } from '#utils/messages_utils';
+import { ModelObject } from '@adonisjs/lucid/types/model';
 
 export default class MessagesController {
 
@@ -83,7 +84,7 @@ export default class MessagesController {
             // Аутентификация
             await auth.authenticate();
 
-            let messages: Array<Message>;
+            let messages: Array<ModelObject> | undefined;
             // Если объект пагинатора определен, то получаем сообщения согласно правилам пагинации
             if (paginator) {
                 messages = await fetchMessagesBasicWithPaginator(validParams!.chat_id, paginator);
@@ -169,14 +170,13 @@ export default class MessagesController {
                 throw err;
             }
 
-            let forwardedMessages: Array<Message>
+            let forwardedMessages: Array<ModelObject> | undefined;
             try {
                 // Если создаваемое сообщение является пересылающим другие сообщения
                 // (Создать пересылаемое сообщение можно только в существующем чате)
                 if (validData!.forwarding === true && validData!.chat_id && validData!.forwarded_ids) {
                     await createForwardingsRows(message, validData!.forwarded_ids);
-                    // forwardedMessages = await fetchForwardedMessages(validData!.forwarded_ids);
-                    forwardedMessages = [];
+                    forwardedMessages = await fetchForwardedMessages(validData!.forwarded_ids);
                 }
             } catch (err) {
                 throw {
@@ -188,7 +188,7 @@ export default class MessagesController {
             if(forwardedMessages!) {
                 readyMessage = message.toJSON();
                 readyMessage.forwardedMessage = forwardedMessages;
-            } 
+            }
             else {
                 readyMessage = message;
             }

@@ -2,8 +2,6 @@ import Message from "#models/message";
 import { MessagesPaginator } from "#types/message_types";
 import db from "@adonisjs/lucid/services/db";
 import { ModelObject } from "@adonisjs/lucid/types/model";
-import { query } from "express";
-import { DateTime } from "luxon";
 
 type inputForwardedObject = {
     forwarded_message_id: number;
@@ -46,18 +44,13 @@ export async function createForwardingsRows(message: Message, forwardedIds: Arra
 }
 
 // Извлечение пересланных сообщений по ID в записях сопоставления таблицы messages_forwardings
-export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>) {
+export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>): Promise<Array<ModelObject> | undefined> {
     try {
-        return await Message
+        const messages = await Message
             .query()
-            .select(['id', 'content', 'created_at', 'updated_at'])
-            .whereIn('id', forwardedMessagesIds)
-            .preload('fromUser', (queryBuilder) => {
-                queryBuilder.select('id', 'name', 'lastname', 'surname');
-            })
-            .preload('toUser', (queryBuilder) => {
-                queryBuilder.select('id', 'name', 'lastname', 'surname');
-            })
+            .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
+            .whereIn('id', forwardedMessagesIds);
+        return uploadRucursiveForwardedMessages(messages);
     } catch (err) {
         console.log(err);
         console.error('Не удалось извлечь сообщения по записям сопоставления');
@@ -74,29 +67,32 @@ export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>
 async function uploadRucursiveForwardedMessages(messages: Array<Message>) {
     const trx = await db.transaction();
     try {
+        // рекурсия
         async function transformMessages(message: Message) {
             let readyMessage: ModelObject = message.toJSON();
             if (message.isForwarding === false) {
-                console.log('Выход', message.id);
                 delete readyMessage.forwardedMessagesId;
                 return readyMessage!;
             }
+            // Если список вложенных сообщений есть то выполняем рекурсивный проход по нему
             if (message.forwardedMessagesId && message.forwardedMessagesId.length > 0) {
                 readyMessage.forwardedMessages = []
-                console.log(message.id, 'Имеет вложенность', message.forwardedMessagesId.length, 'шт');
                 let inner = message.forwardedMessagesId.map(async (entry) => {
                     return await transformMessages(entry.forwardedMessage);
                 });
-                delete readyMessage.forwardedMessagesId;
-                readyMessage.forwardedMessages = await Promise.all(inner);
-            } else {
+                delete readyMessage.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
+                readyMessage.forwardedMessages = await Promise.all(inner); // ожидание полезных данных в ответе БД
+            } 
+            // Если массива с вложенными сообщениями нет, но есть об этом информация (т.е поле isForwading=true)
+            // То выполняется запрос на получение вложенных сообщений с БД
+            else {
                 await message.load('forwardedMessagesId', (queryMain) => {
                     queryMain.preload('forwardedMessage', (queryMessage) => {
                         queryMessage
                             .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
                             .preload('fromUser', (querFrom) => querFrom.select(['id', 'name', 'lastname', 'surname']))
                             .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']));
-                    })
+                    });
                 });
                 return await transformMessages(message);
             }
@@ -129,7 +125,8 @@ export async function fetchMessagesBasicWithPaginator(chatId: number, paginator:
             .select(['*'])
             .where('chat_id', chatId)
             .offset(compOffset())
-            .limit(paginator.perPage);
+            .limit(paginator.perPage)
+            .orderBy('created_at', 'asc');
         await trx.commit();
         return await uploadRucursiveForwardedMessages(messages);
     } catch (err) {
