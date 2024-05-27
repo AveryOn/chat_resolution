@@ -27,6 +27,9 @@
     "#policies/*": "./app/policies/*.js",
     "#abilities/*": "./app/abilities/*.js",
     "#database/*": "./database/*.js",
+    "#types/*": "./types/*.js",
+    "#utils/*": "./utils/*.js",
+    "#socket/*": "./socket/*.js",
     "#start/*": "./start/*.js",
     "#tests/*": "./tests/*.js",
     "#config/*": "./config/*.js"
@@ -41,8 +44,10 @@
     "@japa/plugin-adonisjs": "^3.0.1",
     "@japa/runner": "^3.1.4",
     "@swc/core": "^1.4.16",
+    "@types/express": "^4.17.21",
     "@types/luxon": "^3.4.2",
     "@types/node": "^20.12.7",
+    "chalk": "^5.3.0",
     "eslint": "^8.57.0",
     "hot-hook": "^0.2.1",
     "pino-pretty": "^11.0.0",
@@ -55,10 +60,14 @@
     "@adonisjs/core": "^6.8.0",
     "@adonisjs/cors": "^2.2.1",
     "@adonisjs/lucid": "^20.5.1",
+    "@types/socket.io": "^3.0.2",
     "@vinejs/vine": "^2.0.0",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
     "luxon": "^3.4.4",
     "pg": "^8.11.5",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.7.5"
   },
   "hotHook": {
     "boundaries": [

@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm';
-import type { BelongsTo } from '@adonisjs/lucid/types/relations';
+import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm';
+import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations';
 import User from '#models/user';
 import Chat from '#models/chat';
+import MessagesForwading from '#models/messages_forwading';
 
 
 export default class Message extends BaseModel {
@@ -10,13 +11,19 @@ export default class Message extends BaseModel {
     declare id: number;
 
     @column()
-    declare previewMessage: string;
+    declare from_user_id: number;
 
     @column()
-    declare creator: number;
+    declare to_user_id: number;
 
     @column()
-    declare visible: boolean;
+    declare chatId: number;
+
+    @column()
+    declare content: string;
+
+    @column()
+    declare isForwarding: boolean;
 
     @column.dateTime({ autoCreate: true })
     declare createdAt: DateTime;
@@ -36,4 +43,7 @@ export default class Message extends BaseModel {
 
     @belongsTo(() => Chat)
     declare chat: BelongsTo<typeof Chat>;
+
+    @hasMany(() => MessagesForwading, { foreignKey: 'main_message_id' })
+    declare forwardedMessagesId: HasMany<typeof MessagesForwading>;
 }

@@ -10,8 +10,8 @@
 */
 
 import 'reflect-metadata'
-import { Ignitor, prettyPrintError } from '@adonisjs/core'
-
+import { Ignitor, prettyPrintError } from '@adonisjs/core';
+import { startSocketServer } from '#socket/index';
 /**
  * URL to the application root. AdonisJS need it to resolve
  * paths to file and directories for scaffolding commands
@@ -23,23 +23,24 @@ const APP_ROOT = new URL('../', import.meta.url)
  * application.
  */
 const IMPORTER = (filePath: string) => {
-  if (filePath.startsWith('./') || filePath.startsWith('../')) {
-    return import(new URL(filePath, APP_ROOT).href)
-  }
-  return import(filePath)
+    if (filePath.startsWith('./') || filePath.startsWith('../')) {
+        return import(new URL(filePath, APP_ROOT).href)
+    }
+    return import(filePath)
 }
 
 new Ignitor(APP_ROOT, { importer: IMPORTER })
-  .tap((app) => {
-    app.booting(async () => {
-      await import('#start/env')
+    .tap((app) => {
+        app.booting(async () => {
+            await import('#start/env');
+            startSocketServer();
+        })
+        app.listen('SIGTERM', () => app.terminate())
+        app.listenIf(app.managedByPm2, 'SIGINT', () => app.terminate())
     })
-    app.listen('SIGTERM', () => app.terminate())
-    app.listenIf(app.managedByPm2, 'SIGINT', () => app.terminate())
-  })
-  .httpServer()
-  .start()
-  .catch((error) => {
-    process.exitCode = 1
-    prettyPrintError(error)
-  })
+    .httpServer()
+    .start()
+    .catch((error) => {
+        process.exitCode = 1
+        prettyPrintError(error)
+    })
