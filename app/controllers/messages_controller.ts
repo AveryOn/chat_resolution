@@ -13,9 +13,14 @@ import Message from '#models/message';
 import { DateTime } from 'luxon';
 import { initMessagesPaginator } from '#utils/meta_utils';
 import { MessagesPaginator } from '#types/message_types';
-import { subscribeAndSend } from '#socket/services/messages';
-import { createForwardingsRows, fetchForwardedMessages, fetchMessagesBasicWithPaginator, fetchMessagesBasicWithoutPaginator } from '#utils/messages_utils';
+import {
+    createForwardingsRows,
+    fetchForwardedMessages,
+    fetchMessagesBasicWithPaginator,
+    fetchMessagesBasicWithoutPaginator
+} from '#utils/messages_utils';
 import { ModelObject } from '@adonisjs/lucid/types/model';
+import { messageNewEmit } from '#socket/emits/message_emits';
 
 export default class MessagesController {
 
@@ -124,7 +129,7 @@ export default class MessagesController {
                     data: { messages: err?.messages, preview: 'Проверьте корректность отправляемых данных' },
                 }
             }
-            
+
             // Проверка на то чтобы ID создателя сообщения сопоставлялось с полем from_user_id и не было равно to_user_id
             if (validData && (user.id !== validData.from_user_id || user.id === validData.to_user_id)) throw {
                 meta: { status: 'error', code: 422, url: request.url(true) },
@@ -133,7 +138,7 @@ export default class MessagesController {
             // Создание нового экземпляра сообщения
             const message: Message | Message & { forwardedMessages: Array<Message> } = new Message();
             message.content = validData!.content;
-            if(validData!.forwarding === true && validData!.chat_id !== null) {
+            if (validData!.forwarding === true && validData!.chat_id !== null) {
                 message.isForwarding = true;
             }
             let chat: Chat;
@@ -185,19 +190,16 @@ export default class MessagesController {
                 }
             }
             let readyMessage;
-            if(forwardedMessages!) {
-                readyMessage = message.toJSON();
+            readyMessage = message.toJSON();
+            if (forwardedMessages!) {
                 readyMessage.forwardedMessage = forwardedMessages;
             }
-            else {
-                readyMessage = message;
-            }
-            // Отправка нового сообщения другому пользователю по вебсокету
-            await subscribeAndSend(validData!.from_user_id, validData!.to_user_id, chat.id, message);
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: readyMessage,
             })
+            // Направление созданного сообщения собеседнику
+            messageNewEmit(readyMessage, validData!.chat_id, (validData!.chat_id === null) ? readyMessage.chatId : undefined);
         } catch (err) {
             console.error(`messages_controller: store  => ${err?.data ?? err}`);
             response.abort(err, err?.meta?.code ?? 500);
