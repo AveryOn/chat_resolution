@@ -9,9 +9,7 @@
 
 import router from '@adonisjs/core/services/router';
 
-router.group(() => {
-    router.get('/', '#controllers/docs_controller.getDocs');
-}).prefix('/docs')
+router.get('/', '#controllers/docs_controller.getDocs')
 
 // AUTH ROUTES
 router.group(() => {

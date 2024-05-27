@@ -1,9 +1,9 @@
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class DocsController {
-    getDocs({request, response}: HttpContext) {
+    getDocs({ view }: HttpContext) {
         try {
-            response.send({ data: "It's docs for server Forge!" })
+            return view.render('welcome', { username: 'Hello!' })
         } catch (err) {
             console.error(`controllers/docs_controller: getDocs  =>  ${err}`);
             throw err;
