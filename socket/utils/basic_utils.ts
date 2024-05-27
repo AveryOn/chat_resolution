@@ -26,18 +26,6 @@ export function computeSocketId(identifier: number | number[], prefix?: string):
     }
 }
 
-// Формирование ID канала по ID чата
-export function computeChannelId(identifier: number, prefix?: string): string {
-    try {
-        if (!identifier) throw 0;
-        if (prefix) return `${prefix}:` + identifier;
-        return 'room:' + identifier;
-    } catch (err) {
-        throw new Error('utils/basic_utils: computeChannelId  =>  Не удалось сформировать ID канала')
-    }
-}
-
-
 // Перегрузки
 export function findSocketById(socketId: string): Socket;
 export function findSocketById(socketId: string[]): Socket[];

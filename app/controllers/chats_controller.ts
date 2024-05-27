@@ -139,8 +139,6 @@ export default class ChatsController {
                     }
                 }
             }
-
-
             await trx.commit();
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true), paginator },

@@ -15,12 +15,14 @@ import { initMessagesPaginator } from '#utils/meta_utils';
 import { MessagesPaginator } from '#types/message_types';
 import {
     createForwardingsRows,
+    deleteRelationForwardingMessages,
     fetchForwardedMessages,
     fetchMessagesBasicWithPaginator,
-    fetchMessagesBasicWithoutPaginator
+    fetchMessagesBasicWithoutPaginator,
+    uploadRucursiveForwardedMessages
 } from '#utils/messages_utils';
 import { ModelObject } from '@adonisjs/lucid/types/model';
-import { messageNewEmit } from '#socket/emits/message_emits';
+import { messageDeleteEmit, messageNewEmit, messageUpdateEmit } from '#socket/emits/message_emits';
 
 export default class MessagesController {
 
@@ -53,11 +55,24 @@ export default class MessagesController {
                     data: { preivew: "Сообщение не найдено" },
                 }
             }
+            let readyMessage = message!.toJSON();
+            // Если запрашиваемое сообщение является пересылающим другие сообщения то получаем их
+            try {
+                if (message.isForwarding === true) {
+                    const messageFull = await uploadRucursiveForwardedMessages([message]);
+                    if (messageFull) readyMessage = messageFull[0];
+                }
+            } catch (err) {
+                throw {
+                    meta: { status: 'error', code: err.status ?? 500, url: request.url(true) },
+                    data: err,
+                }
+            }
             await trx.commit();
             // Формируем ответ для клиента
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
-                data: message,
+                data: readyMessage,
             });
         } catch (err) {
             await trx.rollback();
@@ -175,10 +190,10 @@ export default class MessagesController {
                 throw err;
             }
 
+            // Если создаваемое сообщение является пересылающим другие сообщения
+            // (Создать пересылаемое сообщение можно только в существующем чате)
             let forwardedMessages: Array<ModelObject> | undefined;
             try {
-                // Если создаваемое сообщение является пересылающим другие сообщения
-                // (Создать пересылаемое сообщение можно только в существующем чате)
                 if (validData!.forwarding === true && validData!.chat_id && validData!.forwarded_ids) {
                     await createForwardingsRows(message, validData!.forwarded_ids);
                     forwardedMessages = await fetchForwardedMessages(validData!.forwarded_ids);
@@ -192,7 +207,7 @@ export default class MessagesController {
             let readyMessage;
             readyMessage = message.toJSON();
             if (forwardedMessages!) {
-                readyMessage.forwardedMessage = forwardedMessages;
+                readyMessage.forwardedMessages = forwardedMessages;
             }
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
@@ -246,21 +261,6 @@ export default class MessagesController {
                 meta: { status: 'error', code: 400, url: request.url(true) },
                 data: { preview: 'Поля ID текущего пользователя и from_user_id разные. Они должны быть одинаковыми' },
             }
-            // Обновление поля preview_message для чата
-            try {
-                const chat: Chat = await Chat.findOrFail(message!.chatId);
-                let previewMessage: string;
-                if (validData!.content.length >= 50) {
-                    previewMessage = validData!.content.substring(0, 47) + '...';
-                } else previewMessage = validData!.content;
-                chat.previewMessage = previewMessage;
-                await chat.save();
-            } catch (err) {
-                throw {
-                    meta: { status: 'error', code: err?.status ?? 422, url: request.url(true) },
-                    data: err,
-                }
-            }
             // Подгрузка связанного с сообщением чата  
             try {
                 await message!.load('chat');
@@ -270,10 +270,25 @@ export default class MessagesController {
                     data: err,
                 }
             }
+            let readyMessage = message!.toJSON();
+            // Если редактируемое сообщение является пересылающим другие сообщения  то получаем их
+            try {
+                if (message.isForwarding === true) {
+                    const messageFull = await uploadRucursiveForwardedMessages([message]);
+                    if (messageFull) readyMessage = messageFull[0];
+                }
+            } catch (err) {
+                throw {
+                    meta: { status: 'error', code: err.status ?? 500, url: request.url(true) },
+                    data: err,
+                }
+            }
             await trx.commit();
+            // Направить собеседнику редактированное сообщение
+            messageUpdateEmit(readyMessage);
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
-                data: message!.toJSON(),
+                data: readyMessage,
             })
         } catch (err) {
             await trx.rollback();
@@ -317,19 +332,27 @@ export default class MessagesController {
             }
 
             try {
-                message.deletedAt = DateTime.local();
+                const currentDate = DateTime.local()
+                message.deletedAt = currentDate;
+                // Если сообщение пересылает другие сообщения, то информация об этом тоже удаляется 
+                // if(message.isForwarding === true) {
+                //     await deleteRelationForwardingMessages(message.id, currentDate);
+                // }
                 await message.save();
             } catch (err) {
                 throw {
                     meta: { status: 'error', code: 500, url: request.url(true) },
-                    data: { preview: 'Ошибка при удалении сообщеня' },
+                    data: { preview: 'Ошибка при удалении сообщения' },
                 }
             }
             await trx.commit();
+            const readyMessage = message.toJSON();
+            // Уведомить собеседника об удалении этого сообщения
+            messageDeleteEmit(readyMessage);
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: null,
-            })
+            });
         } catch (err) {
             await trx.rollback();
             console.error(`messages_controller: deleteMessage  => ${err.data.preview}`);

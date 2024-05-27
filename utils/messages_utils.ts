@@ -1,7 +1,9 @@
 import Message from "#models/message";
+import MessagesForwarding from "#models/messages_forwading";
 import { MessagesPaginator } from "#types/message_types";
 import db from "@adonisjs/lucid/services/db";
 import { ModelObject } from "@adonisjs/lucid/types/model";
+import { DateTime } from "luxon";
 
 type inputForwardedObject = {
     forwarded_message_id: number;
@@ -49,7 +51,9 @@ export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>
         const messages = await Message
             .query()
             .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
-            .whereIn('id', forwardedMessagesIds);
+            .preload('fromUser', (querFrom) => querFrom.select(['id', 'name', 'lastname', 'surname']))
+            .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']))
+            .whereIn('id', forwardedMessagesIds)
         return uploadRucursiveForwardedMessages(messages);
     } catch (err) {
         console.log(err);
@@ -64,25 +68,26 @@ export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>
 
 // Функция рекурсивно запрашивает вложенные (пересылаемые) сообщения и собирает массив сообщений
 // Где у каждого сообщения есть ключ forwardedMessages который содержит вложенные сообщения
-async function uploadRucursiveForwardedMessages(messages: Array<Message>) {
+export async function uploadRucursiveForwardedMessages(messages: Array<Message>) {
     const trx = await db.transaction();
     try {
         // рекурсия
         async function transformMessages(message: Message) {
             let readyMessage: ModelObject = message.toJSON();
             if (message.isForwarding === false) {
-                delete readyMessage.forwardedMessagesId;
+                delete readyMessage!.forwardedMessagesId;
                 return readyMessage!;
             }
             // Если список вложенных сообщений есть то выполняем рекурсивный проход по нему
             if (message.forwardedMessagesId && message.forwardedMessagesId.length > 0) {
-                readyMessage.forwardedMessages = []
+                readyMessage!.forwardedMessages = []
+
                 let inner = message.forwardedMessagesId.map(async (entry) => {
                     return await transformMessages(entry.forwardedMessage);
                 });
-                delete readyMessage.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
-                readyMessage.forwardedMessages = await Promise.all(inner); // ожидание полезных данных в ответе БД
-            } 
+                delete readyMessage!.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
+                readyMessage!.forwardedMessages = await Promise.all(inner); // ожидание полезных данных в ответе БД
+            }
             // Если массива с вложенными сообщениями нет, но есть об этом информация (т.е поле isForwading=true)
             // То выполняется запрос на получение вложенных сообщений с БД
             else {
@@ -91,7 +96,7 @@ async function uploadRucursiveForwardedMessages(messages: Array<Message>) {
                         queryMessage
                             .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
                             .preload('fromUser', (querFrom) => querFrom.select(['id', 'name', 'lastname', 'surname']))
-                            .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']));
+                            .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']))
                     });
                 });
                 return await transformMessages(message);
@@ -124,6 +129,7 @@ export async function fetchMessagesBasicWithPaginator(chatId: number, paginator:
             .query({ client: trx })
             .select(['*'])
             .where('chat_id', chatId)
+            .whereNull('deleted_at')
             .offset(compOffset())
             .limit(paginator.perPage)
             .orderBy('created_at', 'asc');
@@ -148,6 +154,7 @@ export async function fetchMessagesBasicWithoutPaginator(chatId: number) {
             .query({ client: trx })
             .select(['*'])
             .where('chat_id', chatId)
+            .whereNull('deleted_at')
             .preload('forwardedMessagesId', (queryBuilder) => {
                 queryBuilder
                     .select(['forwarded_message_id'])
@@ -165,7 +172,11 @@ export async function fetchMessagesBasicWithoutPaginator(chatId: number) {
                     })
             });
         await trx.commit();
-        return await uploadRucursiveForwardedMessages(messages);
+        messages.forEach((mes) => {
+            console.log(mes.toJSON()?.forwardedMessagesId);
+        })
+        return messages
+        // return await uploadRucursiveForwardedMessages(messages);
     } catch (err) {
         console.log(err);
         console.error('Не удалось выполнить запрос на получение сообщений => utils/messages_utils: fetchMessagesBasicWithoutPaginator');
@@ -176,3 +187,30 @@ export async function fetchMessagesBasicWithoutPaginator(chatId: number) {
         }
     }
 }
+
+
+// При удалении сообщения удаляются и все (для текущего сообщения) связанные записи с информацией о пересланных сообщениях
+export async function deleteRelationForwardingMessages(messageId: number, currentTime: DateTime<boolean>) {
+    const trx = await db.transaction();
+    try {
+        await Message.query({ client: trx })
+            .preload('forwardedMessagesId', (query) => {
+                query
+                    .select('*')
+                    .where('main_message_id', messageId)
+                    .orWhere('forwarded_message_id', messageId)
+                    .update({
+                        deleted_at: currentTime.toSQL(),
+                    });
+            })
+        await trx.commit();
+    } catch (err) {
+        console.log(err);
+        console.error('Не удалось удалить связанные сообщения => utils/messages_utils: deleteRelationForwardingMessages');
+        await trx.rollback();
+        throw {
+            meta: { status: 'error', code: 500 },
+            data: 'Не удалось удалить связанные сообщения',
+        }
+    }
+} 
