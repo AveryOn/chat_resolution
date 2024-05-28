@@ -1,7 +1,7 @@
-import type { HttpContext } from '@adonisjs/core/http'
+import type { HttpContext } from '@adonisjs/core/http';
 
 export default class DocsController {
-    getDocs({ view }: HttpContext) {
+    async getDocs({ view }: HttpContext) {
         try {
             return view.render('welcome', { username: 'Hello!' })
         } catch (err) {

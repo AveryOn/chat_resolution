@@ -6,14 +6,18 @@
     <style>
         * {
             margin: 0;
-            padding: 0; 
+            padding: 0;
             box-sizing: border-box;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+
         }
+
         body {
             width: 100%;
             height: 100vh;
             background-color: rgb(48, 48, 48);
         }
+
         .body {
             width: 100%;
             height: 100vh;
@@ -26,9 +30,10 @@
             backdrop-filter: blur(8px);
             color: rgb(143, 143, 143);
         }
+
         .header-container {
             width: 100%;
-            height: 90px;
+            height: 60px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -36,18 +41,25 @@
             background-color: rgb(20, 20, 20);
             border-bottom: 1px solid rgba(223, 223, 127, 0.637);
         }
-        .header-title {
-            font-style: monospace;
+
+        .main-header-title {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            color: rgb(166, 141, 206);
+            font-size: 1.5rem;
+
         }
+
         .main-container {
             width: 80%;
             min-height: 85vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: max-content;
+            max-height: 90vh;
             margin: auto;
+            padding: 0.2rem 0 2rem 0;
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.2);
             border-radius: 10px;
@@ -60,6 +72,7 @@
             color: rgb(182, 182, 157);
             font-style: monospace;
         }
+
         .bg-stub {
             position: fixed;
             display: flex;
@@ -71,8 +84,43 @@
             bottom: 0;
             width: 100%;
             height: 100vh;
-            background-color: rgba(0,0,0,0);
+            background-color: rgba(0, 0, 0, 0);
             z-index: -1;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            /* ширина для вертикального скроллбара */
+            height: 8px;
+            /* высота для горизонтального скроллбара */
+        }
+
+        /* Ползунок внутри скроллбара */
+        ::-webkit-scrollbar-thumb {
+            background-color: #888888a8;
+            /* цвет ползунка */
+            border-radius: 6px;
+            /* скругленные углы */
+        }
+
+        /* Ползунок при наведении */
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #555;
+            /* цвет ползунка при наведении */
+        }
+
+        /* Трек (фон) скроллбара */
+        ::-webkit-scrollbar-track {
+            background: #f1f1f13b;
+            /* цвет фона скроллбара */
+            border-radius: 6px;
+            /* скругленные углы */
+        }
+
+        /* Кнопки (если присутствуют) */
+        ::-webkit-scrollbar-button {
+            display: none;
+            /* скрыть кнопки */
         }
     </style>
 </head>
@@ -82,15 +130,207 @@
 <body>
     <div class="body">
         <header class="header-container">
-            <h1 class="header-title">Messanger API</h1>
+            <h1 class="main-header-title">Messanger API</h1>
         </header>
-        
+
         <main class="main-container">
-            @!component('components/requestsBlock', { title: 'Authenticate' })
+
+{{--=================================================  AUTH GROUP  =========================================================--}}
+            @requestsBlock({ title: 'AUTH ENDPOINTS', colorFg: 'rgb(160, 62, 226)' })
+                {{-- AUTH --}}
+                @requestRow({
+                    method: 'POST',
+                    title: 'Login into system',
+                    descr: 'Пользователь может выполнить авторизацию по эл. почте и паролю',
+                    url: '/auth',
+                })
+                @end
+                {{-- LOGOUT --}}
+                @requestRow({
+                    method: 'DELETE',
+                    title: 'Logout',
+                    descr: `Запрос очищает авторизационную информацию пользователя и удаляет токен доступа. После такого запроса
+                    пользователю необходимо будет выполнить аутентификацию снова`,
+                    url: '/auth/logout',
+                })
+                @end
+            @end
+
+{{--=================================================  USERS GROUP  =========================================================--}}
+            @requestsBlock({ title: 'USERS ENDPOINTS', colorFg: 'rgb(80, 204, 194)' })
+
+                {{-- GET USERS --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get all users in system',
+                    descr: `
+                        Запросить всех пользователей в системе
+                        ** Примечание: пользователи чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа
+                        `,
+                    url: '/users',
+                })
+                @end
+
+                {{-- GET USER BY ID --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get user BY id',
+                    descr: `
+                        Запросить пользователя по id
+                        `,
+                    url: '/users/:id',
+                })
+                @end
+
+                {{-- CREATE USER --}}
+                @requestRow({
+                    method: 'POST',
+                    title: 'Creation user',
+                    descr: `Запрос на создание пользователя`,
+                    url: '/users/create',
+                })
+                @end
+
+                {{-- UPDATE USER --}}
+                @requestRow({
+                    method: 'PUT',
+                    title: 'Update user',
+                    descr: `Запрос на обновление данных пользователя`,
+                    url: '/users/:user_id/update',
+                })
+                @end
+
+                {{-- DELETE USER --}}
+                @requestRow({
+                    method: 'DELETE',
+                    title: 'Delete user',
+                    descr: `
+                        Запрос на удаление пользователя. 
+                        ** Примечание: после выполнения запроса, пользователь выполнивший запрос <Мягко> удаляется из системы **
+                        `,
+                    url: '/users/:user_id/delete',
+                })
+                @end
+            @end
+
+{{--=================================================  CHATS GROUP  =========================================================--}}
+            @requestsBlock({ title: 'CHATS ENDPOINTS', colorFg: 'rgb(247, 166, 18)' })
+                {{-- GET CHATS --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get all chats for user',
+                    descr: `
+                        Запрос на получение всех чатов пользователя ** Примечание: 
+                        * Чаты чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа.
+                        * Доступен объект пагинатора
+                        `,
+                    url: '/chats',
+                })
+                @end
+
+                {{-- GET CHAT BY ID --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get chat BY id',
+                    descr: `
+                        Запросить чат по id
+                        `,
+                    url: '/chats/:id',
+                })
+                @end
+
+                {{-- CREATE CHAT --}}
+                @requestRow({
+                    method: 'POST',
+                    title: 'Creation chat',
+                    descr: `Запрос на создание чата`,
+                    url: '/chats/create',
+                })
+                @end
+
+                {{-- UPDATE CHAT --}}
+                @requestRow({
+                    method: 'PUT',
+                    title: 'Update chat',
+                    descr: `Запрос на обновление данных чата`,
+                    url: '/chats/:id/update',
+                })
+                @end
+
+                {{-- DELETE CHAT --}}
+                @requestRow({
+                    method: 'DELETE',
+                    title: 'Delete chat',
+                    descr: `
+                        Запрос на удаление чата. 
+                        ** Примечание: после выполнения запроса, чат <Мягко> удаляется из системы **
+                        `,
+                    url: '/chats/:id/delete',
+                })
+                @end
+            @end
+
+{{--=================================================  MESSAGES GROUP  =========================================================--}}
+            @requestsBlock({ title: 'MESSAGES ENDPOINTS', colorFg: 'rgb(238, 88, 51)' })
+                {{-- GET MESSAGES --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get all messages of chat',
+                    descr: `
+                        Запрос на получение сообщений в чате ** Примечание:
+                        * сообщений чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа.
+                        * если сообщение содержит вложенные удаленные сообщение, то они будут проходить в ответ 
+                        * Для этого запроса доступен объект пагинатора
+                    `,
+                    url: '/messages/chat/:chat_id',
+                })
+                @end
+
+                {{-- GET MESSAGE BY ID --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get message BY id',
+                    descr: `
+                        Запросить сообщение по id
+                    `,
+                    url: '/message/:id',
+                })
+                @end
+
+                {{-- CREATE MESSAGE --}}
+                @requestRow({
+                    method: 'POST',
+                    title: 'Creation message',
+                    descr: `Запрос на создание сообщения`,
+                    url: '/create',
+                })
+                @end
+
+                {{-- UPDATE MESSAGE --}}
+                @requestRow({
+                    method: 'PUT',
+                    title: 'Edit message',
+                    descr: `Запрос на редактирование сообщения`,
+                    url: '/:id/update',
+                })
+                @end
+
+                {{-- DELETE MESSAGE --}}
+                @requestRow({
+                    method: 'DELETE',
+                    title: 'Delete message',
+                    descr: `
+                    Запрос на удаление сообщение.
+                    ** Примечание: сообщение удаляется из системы <Мягко> **
+                        `,
+                    url: '/chats/:id/delete',
+                })
+                @end
+            @end
 
         </main>
-    
-    
+
+
     </div>
     <div class="bg-stub">
         <h1 class="bg-stub__title">Messanger API</h1>
