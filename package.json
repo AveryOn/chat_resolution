@@ -62,6 +62,7 @@
     "@adonisjs/lucid": "^20.5.1",
     "@types/socket.io": "^3.0.2",
     "@vinejs/vine": "^2.0.0",
+    "edge.js": "^6.0.2",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.4.4",

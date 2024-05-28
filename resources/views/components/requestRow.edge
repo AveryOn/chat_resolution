@@ -1,0 +1,179 @@
+<style>
+
+    :root {
+        --color-bg: rgba(128, 128, 128, 0.39);
+        --color-fg: white;
+        --color-method-fg: rgb(17, 17, 17);
+        --color-put-bg: rgb(145, 55, 218);
+        --color-post-bg: rgb(218, 133, 55);
+        --color-get-bg: rgb(71, 206, 89);
+        --color-delete-bg: rgb(218, 55, 55);
+        --shadow-row: 0px 0px 8px;
+    }
+    .request-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        background-color: rgba(37, 37, 37, 0.801);
+        margin-top: .8rem;
+        border-radius: 5px;
+        {{-- border: 1px solid red; --}}
+    }
+
+    .request-row-header {
+        width: 100%;
+        height: 60px;
+        {{-- border: 1px solid rgb(123, 255, 0); --}}
+        display: flex;
+        justify-content: space-around;
+    }
+    .method-put {
+        box-shadow: var(--shadow-row) var(--color-put-bg);
+    }
+    .method-get {
+        box-shadow: var(--shadow-row) var(--color-get-bg);
+    }
+    .method-delete {
+        box-shadow: var(--shadow-row) var(--color-delete-bg);
+    }
+    .method-post {
+        box-shadow: var(--shadow-row) var(--color-post-bg);
+    }
+
+    /*  ==================================   METHOD BLOCK  ====================================== */
+    .method-block {
+        width: 15%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-right: 2px solid var(--color-bg);
+        padding: .7rem;
+    }
+    .header-method {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    .post {
+        background-color: var(--color-post-bg);
+        color: var(--color-method-fg);
+    }
+    .delete {
+        background-color: var(--color-delete-bg);
+        color: var(--color-method-fg);
+    }
+    .put {
+        background-color: var(--color-put-bg);
+        color: var(--color-method-fg);
+    }
+    .get {
+        background-color: var(--color-get-bg);
+        color: var(--color-method-fg);
+    }
+
+
+    /*  ==================================   URL BLOCK  ====================================== */
+    .url-block {
+        width: 30%;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        border-right: 2px solid var(--color-bg);
+        padding: 0.3rem 0.5rem;
+        overflow: auto;
+    }
+    .header-url {
+        background-color: black;
+        padding: 0.2rem 1rem;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 100;
+        font-family: monospace;
+        color: rgb(103, 212, 52);
+        word-break: break-all;
+        white-space: nowrap;
+    }
+
+    /*  ==================================   TITLE BLOCK  ====================================== */
+    .title-block {
+        width: 25%;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        border-right: 2px solid var(--color-bg);
+        padding: 0.3rem 0.5rem;
+        overflow: auto;
+    }
+    .header-title {
+        color: rgb(166, 141, 206);
+        font-weight: normal;
+        font-size: 17px;
+        font-family: monospace;
+        word-break: break-all;
+        white-space: nowrap;
+    }
+
+
+    /*  ==================================   DESCRIPTION BLOCK  ====================================== */
+    .descr-block {
+        width: 30%;
+        height: 100%;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 0.1rem .5rem;
+    }
+    .header-descr {
+        display: block;
+        overflow: auto;
+        height: 100%;
+        width: 100%;
+        padding: 0.4rem 0;
+        text-align: left;
+        color: rgba(168, 214, 154, 0.705);
+        font-style: italic;
+        word-break: normal;
+        letter-spacing: 0.01rem;
+        padding: 0 0.1rem;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
+    }
+    .request-body {
+        width: 100%;
+        display: none;
+        border-top: 1px solid var(--color-bg);
+    }
+</style>
+
+<li class="request-row method-{{ method.toLowerCase() }}">
+    <div class="request-row-header" >
+        {{-- METHOD --}}
+        <div class="method-block">
+            <h2 class="header-method  {{ method.toLowerCase() }}">{{ method }}</h2>
+        </div>
+
+        {{-- URL --}}
+        <div class="url-block">
+            <h2 class="header-url">{{ url }}</h2>
+        </div>
+
+        {{-- TITLE --}}
+        <div class="title-block">
+            <h2 class="header-title">{{ title }}</h2>
+        </div>
+
+        {{-- DESCRIPTION --}}
+        <div class="descr-block">
+            <p class="header-descr">{{ descr }}</p>
+        </div>
+    </div>
+    <div class="request-body">
+        HELLLO
+    </div>
+</li>

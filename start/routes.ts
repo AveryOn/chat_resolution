@@ -9,41 +9,39 @@
 
 import router from '@adonisjs/core/services/router';
 
-router.group(() => {
-    router.get('/', '#controllers/docs_controller.getDocs');
-}).prefix('/docs')
+router.get('/docs', '#controllers/docs_controller.getDocs')
 
 // AUTH ROUTES
 router.group(() => {
-    router.post('/', '#controllers/auth_controller.confirmCredenials');
-    router.delete('/logout', '#controllers/auth_controller.logout');
+    router.post('/', '#controllers/auth_controller.confirmCredenials').as('auth');
+    router.delete('/logout', '#controllers/auth_controller.logout').as('logout');
 }).prefix('auth');
 
 // USERS ROUTES
 router.group(() => {
-    router.get('/', '#controllers/users_controller.getUsers');  // Get users
-    router.get('/:id', '#controllers/users_controller.getUserById');  // Get user BY id
-    router.post('/create', '#controllers/users_controller.store');  // Create
-    router.put('/:user_id/update', '#controllers/users_controller.updateUser')  // Update
-    router.delete('/:user_id/delete', '#controllers/users_controller.deleteUser')  // Delete
+    router.get('/', '#controllers/users_controller.getUsers').as('get-users');  // Get users
+    router.get('/:id', '#controllers/users_controller.getUserById').as('get-user-by-id');  // Get user BY id
+    router.post('/create', '#controllers/users_controller.store').as('create-user');  // Create
+    router.put('/:user_id/update', '#controllers/users_controller.updateUser').as('update-user')  // Update
+    router.delete('/:user_id/delete', '#controllers/users_controller.deleteUser').as('delete-user')  // Delete
 }).prefix('users');
 
 // CHATS ROUTES
 router.group(() => {
-    router.get('/', '#controllers/chats_controller.getChats');
-    router.get('/:id', '#controllers/chats_controller.getChatById');
-    router.post('/create', '#controllers/chats_controller.store');
-    router.put('/:id/update', '#controllers/chats_controller.updateChat');
-    router.delete('/:id/delete', '#controllers/chats_controller.deleteChat');
+    router.get('/', '#controllers/chats_controller.getChats').as('get-chats');  // Get chats
+    router.get('/:id', '#controllers/chats_controller.getChatById').as('get-chat-by-id'); //  Get chat BY id
+    router.post('/create', '#controllers/chats_controller.store').as('create-chat');  //  Create chat
+    router.put('/:id/update', '#controllers/chats_controller.updateChat').as('update-chat');  //  Update chat
+    router.delete('/:id/delete', '#controllers/chats_controller.deleteChat').as('delete-chat');  //  Delete chat
 }).prefix('chats');
 
-// MESsAGES ROUTES
+// MESSAGES ROUTES
 router.group(() => {
-    router.get('/message/:id', '#controllers/messages_controller.getMessageById');
-    router.get('/chat/:chat_id', '#controllers/messages_controller.getMessages');
-    router.post('/create', '#controllers/messages_controller.store');
-    router.put('/:id/update', '#controllers/messages_controller.updateMessage');
-    router.delete('/:id/delete', '#controllers/messages_controller.deleteMessage');
+    router.get('/message/:id', '#controllers/messages_controller.getMessageById').as('get-message-by-id'); // Get message BY id
+    router.get('/chat/:chat_id', '#controllers/messages_controller.getMessages').as('get-messages');  // Get messages BY chat ID
+    router.post('/create', '#controllers/messages_controller.store').as('create-message');  // Create message
+    router.put('/:id/update', '#controllers/messages_controller.updateMessage').as('update-message');  // Update message
+    router.delete('/:id/delete', '#controllers/messages_controller.deleteMessage').as('delete-message');  //  Delete message
 }).prefix('messages');
 
 

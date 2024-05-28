@@ -1,0 +1,56 @@
+<style>
+    .request-block {
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: max-content;
+        margin: 0;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 0.5rem 1rem 2rem 1rem;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.26);
+    }
+    .request-block {
+        margin-top: 20px;
+    }
+    .request-main {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .request-list-endpoints {
+        width: 100%;
+        height: max-content;
+        color: white;
+
+    }
+
+    .request-block-header {
+        width: 100%;
+        font-size: 1.6rem;
+        text-align: center;
+        border-bottom: 2px solid rgba(163, 163, 163, 0.692);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-weight: 600;
+        margin-bottom: 0.1rem;
+        padding: 0.2rem 0;
+    }
+
+    #{{title.toLowerCase().split(' ').join('-')}} {
+        color: {{ colorFg }};
+    }
+</style>
+
+<div class="request-block">
+    <h2 class="request-block-header" id="{{title.toLowerCase().split(' ').join('-')}}">{{ title }}</h2>
+    <div class="request-main">
+        <ul class="request-list-endpoints">
+            {{{ await $slots.main() }}}
+        </ul>
+    </div>
+
+</div>
