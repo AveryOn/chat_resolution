@@ -1,0 +1,136 @@
+<style>
+    .menu__pathes-block {
+        position: relative;
+        left: -150%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+    .pathes-title {
+        color: var(--color-fg);
+        font-size: 19px;
+        letter-spacing: 0.05rem;
+        background-color: rgb(0, 0, 0);
+        color: rgb(255, 255, 255);
+        border-bottom: 1px solid white;
+        padding: 0.2rem 0.8rem;
+        align-self: flex-start;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    .pathes-table{
+        width: 100%;
+        height: max-content;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: var(--color-fg);
+        border-top-right-radius: 6px;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+    }
+    .pathes-table__header {
+        width: 100%;
+        display: flex;
+        align-items: center;
+    }
+    .pathes-table__declare-columns {
+        width: 100%;
+        display: flex;
+        align-items: center;
+    }
+    .declare-columns__item {
+        width: 25%;
+        border-bottom: 2px solid var(--color-bg);
+        padding: .5rem 1rem;
+        font-size: 17px;
+        font-family: monospace;
+        font-weight: bolder;
+    }
+    .declare-columns__item.no {
+        width: 5%;
+        font-weight: bolder;
+        display: flex;
+        font-size: 17px;
+        align-items: center;
+        justify-content: center;
+        font-family: monospace;
+        overflow-x: hidden;
+    }
+    .declare-columns__item + .declare-columns__item {
+        border-left: 2px solid var(--color-bg);
+    }
+    .queries-table__body {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .pathes-table__declare-values {
+        width: 100%;
+        display: flex;
+        align-items: center;
+    }
+    .declare-values__item {
+        width: 25%;
+        padding: .5rem 1rem;
+        font-size: 16px;
+        font-family: monospace;
+        font-weight: 100;
+    }
+    .declare-values__item + .declare-values__item {
+        border-left: 2px solid var(--color-bg);
+    }
+    .declare-values__item.no {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(233, 212, 146);
+        width: 5%;
+
+    }
+    .declare-values__item.key {
+        color: rgb(71, 193, 230);
+    }
+    .declare-values__item.type {
+        color: rgb(85, 231, 187);
+    }
+    .declare-values__item.required.false {
+        color: rgba(172, 172, 172, 0.719);
+        font-weight: 100;
+        font-style: italic;
+    }
+    .declare-values__item.required.true {
+        color: rgb(252, 39, 2);
+        font-weight: bolder;
+    }
+    .declare-values__item.default {
+
+    }
+</style>
+
+<div class="menu__pathes-block">
+    <h2 class="pathes-title">Path params:</h2>
+    <div class="pathes-table">
+        {{--  Заголовок таблицы. Описывает столбцы таблицы  --}}
+        <header class="pathes-table__header">
+            <ul class="pathes-table__declare-columns">
+                <li class="declare-columns__item no">№</li>
+                <li class="declare-columns__item">Key</li>
+                <li class="declare-columns__item">Type</li>
+                <li class="declare-columns__item">Required</li>
+                <li class="declare-columns__item">Default</li>
+            </ul>
+        </header>
+        {{--  Декларативный блок. Описывает информацию параметров пути  --}}
+        <div class="pathes-table__body">
+            @each((path, index) in pathParams)
+                <div class="pathes-table__declare-values">
+                    <div class="declare-values__item no">{{ index += 1 }}</div>
+                    <div class="declare-values__item key">{{ path.key }}</div>
+                    <div class="declare-values__item type">{{ path.type }}</div>
+                    <div class="declare-values__item required {{path.required}}">{{ path.required }}</div>
+                    <div class="declare-values__item default">{{ path.default ?? '-' }}</div>
+                </div>
+            @end
+        </div>
+    </div>
+</div>
