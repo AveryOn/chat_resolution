@@ -164,6 +164,7 @@
         overflow: hidden;
     }
     .request-info-menu__title-chunk {
+        position: relative;
         color: rgba(230, 230, 230, 0.486);
         font-size: 1.5rem;
         font-style: italic;
@@ -171,6 +172,12 @@
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     }
 
+    .request-info-menu__title-chunk.request {
+        right: -100%;
+    }
+    .request-info-menu__title-chunk.response {
+        left: -100%;
+    }
     .icon-title {
         width: 25px;
         font-size: 1.4rem !important;
@@ -178,6 +185,7 @@
     }
 
     .separator {
+        position: relative;
         width: 100%;
         border: 1px solid var(--color-bg);
         margin: 1.5rem 0;
@@ -203,6 +211,20 @@
         right: -150px;
         top: 0;
         width: 60px;
+        height: 60px;
+        background-color: rgba(61, 61, 61, 0.815);
+        border: 1px solid rgba(0,0,0,0);
+        padding: 0.3rem;
+        outline: rgba(0,0,0,0);
+        cursor: pointer;
+        z-index: 9999;
+    }
+    .btn-hidden {
+        position: absolute;
+        right: 0;
+        top: auto;
+        width: 60px;
+        bottom: 0;
         height: 60px;
         background-color: rgba(61, 61, 61, 0.815);
         border: 1px solid rgba(0,0,0,0);
@@ -246,7 +268,7 @@
 
     {{-- INFORAMTION BLOCK --}}
     <div class="request-info-menu" id="{{Date.now()}}">
-        <h1 class="request-info-menu__title-chunk">Request Data <i class="fa-regular fa-paper-plane icon-title"></i></h1>
+        <h1 class="request-info-menu__title-chunk request">Request Data <i class="fa-regular fa-paper-plane icon-title"></i></h1>
         @queriesBlock({queries}) 
         @end
 
@@ -257,10 +279,23 @@
 
         <div class="separator"></div>
 
-        <h1 class="request-info-menu__title-chunk">Response Data <i class="fa-solid fa-reply icon-title"></i></i></h1>
+
+        
+        <h1 class="request-info-menu__title-chunk response">Response Data <i class="fa-solid fa-reply icon-title"></i></i></h1>
+
+        @requestBody({requestExample}) 
+        @end
+
+        <div class="separator"></div>
+
+
+        <h1 class="request-info-menu__title-chunk response">Response Data <i class="fa-solid fa-reply icon-title"></i></i></h1>
 
         @responseBlock({ responseExample }) 
         @end
 
+        <button class="btn-hidden">
+            <i class="fa-solid fa-chevron-up icon"></i>
+        </button>
     </div>
 </li>

@@ -12,7 +12,7 @@ export const validBodyCreationChat = vine.compile(
     vine.object({
         creator: vine.number().positive(),
         companion_id: vine.number().positive().optional(),
-        preview_message: vine.string().minLength(1).use(cropMessage({ max: 47 }))
+        preview_message: vine.string().minLength(1).use(cropMessage({ max: 47 })).optional()
     })
 )
 

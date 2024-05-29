@@ -122,8 +122,7 @@ export default class UsersController {
             })
         }
     }
-
-
+    
     // Обновление данных пользователя
     async updateUser({ request, response, auth }: HttpContext) {
         try {

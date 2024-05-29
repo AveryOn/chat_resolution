@@ -147,18 +147,36 @@
                     descr: 'Пользователь может выполнить авторизацию по эл. почте и паролю',
                     url: '/auth',
                     requiredAuth: false,
-                    queries: [{ key: 'is_admin', type: 'boolean', required: true, default: false }, { key: 'id', type: 'number', 'required': false, default: '0' }],
-                    pathParams: [ { key: 'user_id', type: 'number', 'required': true, default: null } ],
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', 'required': '-', default: '-' } ],
                     responseExample: `
-                    { 
-                        "data": { 
-                            "id": "number", 
-                            "name": "string", 
-                            "is_active": "boolean", 
-                            "create_at": "string", 
-                            "updated_at": "string"'
-                        } 
-                    }`
+                    {
+                        "data": {
+                            "user": {
+                                "id": number,
+                                "name": string,
+                                "lastname": string,
+                                "surname": null | string,
+                                "email": string,
+                                "role": "user" | "admin",
+                                "lastActivity": null | string,
+                                "createdAt": string,
+                                "updatedAt": string,
+                                "deletedAt": null | string
+                            },
+                            "access_token": {
+                                "type": "bearer",
+                                "name": null | string,
+                                "token": string,
+                                "abilities": [
+                                    "*"
+                                ],
+                                "lastUsedAt": null | string,
+                                "expiresAt": string
+                            }
+                        }
+                    }
+                    `
                 })
                 @end
                 {{-- LOGOUT --}}
@@ -169,6 +187,18 @@
                     descr: `Запрос очищает авторизационную информацию пользователя и удаляет токен доступа. После такого запроса
                     пользователю необходимо будет выполнить аутентификацию снова`,
                     url: '/auth/logout',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', 'required': '-', default: '-' } ],
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/auth/logout"
+                            },
+                            "data": null
+                        }
+                    `
                 })
                 @end
             @end
@@ -186,6 +216,30 @@
                         ** Примечание: пользователи чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа
                         `,
                     url: '/users',
+                    queries: [{ key: 'page', type: 'number', required: false, default: '-' },{ key: 'per_page', type: 'number', required: false, default: '-' },],
+                    pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/users/",
+                                "paginator": null | [paginator Object]
+                            },
+                            "data": {
+                                "users": [
+                                    {
+                                        "id": number,
+                                        "name": string,
+                                        "lastname": string,
+                                        "surname": null | string,
+                                        "lastActivity": null | string,
+                                        "createdAt": string,
+                                    }
+                                ]
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -198,6 +252,26 @@
                         Запросить пользователя по id
                         `,
                     url: '/users/:id',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: 'id', type: 'number', required: true, default: '-' } ],
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/users/:id"
+                            },
+                            "data": {
+                                "id": number,
+                                "name": string,
+                                "lastname": string,
+                                "surname": null | string,
+                                "lastActivity": null | string,
+                                "createdAt": string,
+                                "deletedAt": null | string,
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -208,6 +282,34 @@
                     descr: `Запрос на создание пользователя`,
                     url: '/users/create',
                     requiredAuth: false,
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
+                    requestExample: `
+                        {
+                            "email": string *,
+                            "password": string *,
+                            "name": string *,
+                            "lastname": string *
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/users/create"
+                            },
+                            "data": {
+                                "id": number,
+                                "name": string,
+                                "lastname": string,
+                                "surname": null | string,
+                                "lastActivity": null | string,
+                                "createdAt": string,
+                                "deletedAt": null | string,
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -218,6 +320,40 @@
                     descr: `Запрос на обновление данных пользователя`,
                     url: '/users/:user_id/update',
                     requiredAuth: true,
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: 'user_id', type: 'number', required: true, default: '-' } ],
+                    requestExample: `
+                        {
+                            "email": string ?,
+                            "password": string ?,
+                            "name": string ?,
+                            "lastname": string ?,
+                            "surname": string ?,
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/users/:user_id/update"
+                            },
+                            "data": {
+                                "user": {
+                                    "id": number,
+                                    "email": string,
+                                    "name": string,
+                                    "lastname": string,
+                                    "surname": null | string,
+                                    "role": "user" | "admin",
+                                    "lastActivity": null | string,
+                                    "createdAt": string,
+                                    "updatedAt": null | string,
+                                    "deletedAt": null | string
+                                }
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -231,6 +367,19 @@
                         ** Примечание: после выполнения запроса, пользователь выполнивший запрос <Мягко> удаляется из системы **
                         `,
                     url: '/users/:user_id/delete',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: 'user_id', type: 'number', required: true, default: '-' } ],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/users/:user_id/delete"
+                            },
+                            "data": null
+                        }
+                    `
                 })
                 @end
             @end
@@ -248,6 +397,42 @@
                         * Доступен объект пагинатора
                         `,
                     url: '/chats',
+                    queries: [
+                        { key: 'page', type: 'number', required: false, default: '-' }, 
+                        { key: 'per_page', type: 'number', required: false, default: '-' }, 
+                        { key: 'is_visible', type: 'boolean', required: false, default: '-' }, 
+                    ],
+                    pathParams: [ 
+                        { key: '-', type: '-', required: '-', default: '-' }, 
+                    ],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/chats",
+                                "paginator": null | [paginator Object]
+                            },
+                            "data": [
+                                {
+                                    "id": number,
+                                    "creator": number,
+                                    "createdAt": string,
+                                    "users": [
+                                        {
+                                            "id": number,
+                                            "name": string,
+                                            "lastname": string,
+                                            "surname": null | string,
+                                            "lastActivity": null | string,
+                                            "createdAt": string
+                                        }
+                                    ]
+                                }
+                            ]
+                        }  
+                    `
                 })
                 @end
 
@@ -260,6 +445,31 @@
                         Запросить чат по id
                         `,
                     url: '/chats/:id',
+                    queries: [
+                        { key: '-', type: '-', required: '-', default: '-' }, 
+                    ],
+                    pathParams: [ 
+                        { key: 'id', type: 'number', required: true, default: '-' }, 
+                    ],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/chats/:id/"
+                            },
+                            "data": {
+                                "id": number,
+                                "previewMessage": string | null,
+                                "creator": number,
+                                "visible": boolean,
+                                "createdAt": string,
+                                "updatedAt": string | null,
+                                "deletedAt": string | null
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -270,6 +480,48 @@
                     descr: `Запрос на создание чата`,
                     url: '/chats/create',
                     requiredAuth: true,
+                    queries: [
+                        { key: '-', type: '-', required: '-', default: '-' }, 
+                    ],
+                    pathParams: [ 
+                        { key: '-', type: '-', required: '-', default: '-' }, 
+                    ],
+                    requestExample: `
+                        {
+                            "creator": number *,
+                            "companion_id": number *,
+                            "preview_message": string ?
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/chats/create"
+                            },
+                            "data": {
+                                "id": number,
+                                "previewMessage": string | null,
+                                "creator": number,
+                                "visible": boolean,
+                                "createdAt": string,
+                                "updatedAt": string | null,
+                                "deletedAt": string | null,
+                                "users": [
+                                    {
+                                        "id": number,
+                                        "name": string,
+                                        "lastname": string,
+                                        "surname": string | null,
+                                        "lastActivity": string | null,
+                                        "createdAt": string,
+                                        "deletedAt": string | null,
+                                    }
+                                ]
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -280,6 +532,36 @@
                     descr: `Запрос на обновление данных чата`,
                     url: '/chats/:id/update',
                     requiredAuth: true,
+                    queries: [
+                        { key: '-', type: '-', required: '-', default: '-' }, 
+                    ],
+                    pathParams: [ 
+                        { key: 'id', type: 'number', required: true, default: '-' }, 
+                    ],
+                    requestExample: `
+                        {
+                            "preview_message": string ?,
+                            "visible": boolean ?,
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/chats/:id/update"
+                            },
+                            "data": {
+                                "id": 9,
+                                "previewMessage": string | null,
+                                "creator": number,
+                                "visible": boolean,
+                                "createdAt": string,
+                                "updatedAt": string | null,
+                                "deletedAt": null
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -294,6 +576,25 @@
                         ** Примечание: после выполнения запроса, чат <Мягко> удаляется из системы **
                         `,
                     url: '/chats/:id/delete',
+                    queries: [
+                        { key: '-', type: '-', required: '-', default: '-' }, 
+                    ],
+                    pathParams: [ 
+                        { key: 'id', type: 'number', required: true, default: '-' }, 
+                    ],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/chats/:id/delete"
+                            },
+                            "data": { 
+                                deletedAt: string 
+                            }
+                        }
+                    `
                 })
                 @end
             @end
@@ -312,6 +613,36 @@
                         * Для этого запроса доступен объект пагинатора
                     `,
                     url: '/messages/chat/:chat_id',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [{ key: 'chat_id', type: 'number', required: true, default: '-' }],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/messages/chat/:chat_id",
+                                "paginator": null | [paginator Object]
+                            },
+                            "data": {
+                                "messages": [
+                                    {
+                                        "id": number,
+                                        "fromUserId": number,
+                                        "toUserId": number,
+                                        "chatId": number,
+                                        "content": string,
+                                        "isForwarding": boolean,
+                                        "forwardedMessages": null | [],
+                                        "createdAt": string,
+                                        "updatedAt": string | null,
+                                        "deletedAt": string | null,
+                                    }
+                                ]
+                            }
+                        }
+                    `
+
                 })
                 @end
 
@@ -323,7 +654,31 @@
                     descr: `
                         Запросить сообщение по id
                     `,
-                    url: '/message/:id',
+                    url: 'messages/message/:id',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [{ key: 'id', type: 'number', required: true, default: '-' }],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/messages/message/:id"
+                            },
+                            "data": {
+                                "id": number,
+                                "fromUserId": number,
+                                "toUserId": number,
+                                "chatId": number,
+                                "content": string,
+                                "isForwarding": boolean,
+                                "forwardedMessages": null | [],
+                                "createdAt": string,
+                                "updatedAt": string | null,
+                                "deletedAt": string | null,
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -333,7 +688,47 @@
                     title: 'Creation message',
                     descr: `Запрос на создание сообщения`,
                     requiredAuth: true,
-                    url: '/create',
+                    url: 'messages/create',
+                    queries: [{ key: 'forwarding', type: 'boolean', required: false, default: '-' }],
+                    pathParams: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    requestExample: `
+                        {
+                            from_user_id: number *,
+                            to_user_id: number *,
+                            chat_id: number *,
+                            content: string *,
+                            forwarded_ids: number[] ?,
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/messages/create"
+                            },
+                            "data": {
+                                "id": number,
+                                "content": string,
+                                "chatId": number,
+                                "toUserId": number,
+                                "fromUserId": number,
+                                "chat": {
+                                    "id": number,
+                                    "previewMessage": string | null,
+                                    "creator": number,
+                                    "visible": boolean,
+                                    "createdAt": string,
+                                    "updatedAt": string | null,
+                                    "deletedAt": string | null
+                                },
+                                "isForwarding": boolean,
+                                "forwardedMessages": null | []
+                                "createdAt": string,
+                                "updatedAt": string | null,
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -343,7 +738,44 @@
                     title: 'Edit message',
                     descr: `Запрос на редактирование сообщения`,
                     requiredAuth: true,
-                    url: '/:id/update',
+                    url: 'messages/:id/update',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [{ key: 'id', type: 'number', required: true, default: '-' }],
+                    requestExample: `
+                        {
+                            content: string *,
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/messages/:id/update"
+                            },
+                            "data": {
+                                "id": number,
+                                "content": string,
+                                "chatId": number,
+                                "toUserId": number,
+                                "fromUserId": number,
+                                "chat": {
+                                    "id": number,
+                                    "previewMessage": string | null,
+                                    "creator": number,
+                                    "visible": boolean,
+                                    "createdAt": string,
+                                    "updatedAt": string | null,
+                                    "deletedAt": string | null
+                                },
+                                "isForwarding": boolean,
+                                "forwardedMessages": null | []
+                                "createdAt": string,
+                                "updatedAt": string | null,
+                                "deletedAt": string | null
+                            }
+                        }
+                    `
                 })
                 @end
 
@@ -356,7 +788,20 @@
                     Запрос на удаление сообщение.
                     ** Примечание: сообщение удаляется из системы <Мягко> **
                         `,
-                    url: '/chats/:id/delete',
+                    url: 'messages/:id/delete',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [{ key: 'id', type: 'number', required: true, default: '-' }],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/messages/:id/delete"
+                            },
+                            "data": null
+                        }
+                    `
                 })
                 @end
             @end
@@ -375,33 +820,45 @@
         Prism.highlightAll();
 
         let opennedMenuIds = [];
+        let basicDuration = 0.4;
 
         {{-- Выполнить анимацию раворачивания info menu --}}
-        function expandInfoMenu(menu, btnExpand) {
+        function expandInfoMenu(menu) {
+            let duration = 0.15;
             let queriesBlock;
-            menu.childNodes.forEach((node => {
-                if(node.classList && node.classList.value.split(' ').includes('menu__queries-block')) {
-                    queriesBlock = node;
-                }
-            }));
-            if(!queriesBlock) throw 'Не удалось получить DOM: queriesBlock';
-            let duration = 0.4;
+            let pathesBlock;
+            let responseBlock;
+            let requestTitle;
+            let responseTitle;
+            queriesBlock = menu.childNodes[4];
+            pathesBlock = menu.childNodes[10];
+            requestBody = menu.childNodes[18];
+            responseBlock = menu.childNodes[26];
+            requestTitle = menu.childNodes[1];
+            responseTitle = menu.childNodes[22];
+
             // Свернуть инфо блок
             if(opennedMenuIds.includes(menu.id)) {
                 opennedMenuIds = opennedMenuIds.filter(id => menu.id != id);
-                return gsap.to(menu, { duration, height: '0px', padding: '0', zIndex: '-1'  })
+                return gsap.to(menu, { duration: 0.3, height: '0px', padding: '0', zIndex: '-1'  });
             }
             opennedMenuIds.push(menu.id);
             const tl = gsap.timeline();
-            tl.to(menu, { duration, height: 'max-content', padding: '1rem', zIndex:'12' })
-            console.log(btnExpand)
-            tl.to(btnExpand, { duration, bottom: '10px' })
-            
+            tl.to(menu, { duration: 0.3, height: 'max-content', padding: '1rem', zIndex:'12' })
+            tl.to(queriesBlock, { duration, left: '0' })
+            tl.to(pathesBlock, { duration, left: '0' })
+            tl.to(requestBody, { duration, left: '0' })
+            tl.to(responseBlock, { duration, left: '0' })
+            tl.to(requestTitle, { duration, right: '0' })
+            tl.to(responseTitle, { duration, left: '0' })
         }
 
         {{-- Найти DOM кнопки расширения инфо меню  --}}
         function findExpandBtn(event) {
-            return event.target.childNodes[7].childNodes[3]
+            return event.target.childNodes[7].childNodes[3];
+        }
+        function findHiddenBtn(event) {
+            return event.target.childNodes
         }
 
         {{-- Найти DOM информационного блока на который произошел клик --}}
@@ -424,24 +881,43 @@
         const requestRows = document.querySelectorAll('.request-row-header');
         let btnsExpand = document.querySelectorAll('.btn-expand'); 
         btnsExpand.forEach((btnExpand) => {
-            btnExpand.addEventListener('click', findInfoMenu)
+            btnExpand.addEventListener('click', findInfoMenu);
             let chevronIcon = btnExpand.childNodes[1]
             btnExpand.addEventListener('mouseenter', () => {
-                gsap.to(chevronIcon, { duration: 0.3, rotate: '360deg' })
-            })
+                gsap.to(chevronIcon, { duration: basicDuration, rotate: '360deg' })
+            });
             btnExpand.addEventListener('mouseleave', (event) => {
-                gsap.to(chevronIcon, { duration: 0.2, rotate: '-360deg' })
+                gsap.to(chevronIcon, { duration: basicDuration, rotate: '-360deg' })
+            });
+        });
+
+        let btnsHidden = document.querySelectorAll('.btn-hidden');
+        btnsHidden.forEach((btnHidden) => {
+            btnHidden.addEventListener('click', (event) => {
+                const infoMenu = event.target.parentElement;
+                expandInfoMenu(infoMenu);
+            });
+            let chevronIcon = btnHidden.childNodes[1]
+            btnHidden.addEventListener('mouseenter', () => {
+                gsap.to(chevronIcon, { duration: basicDuration, rotate: '360deg' })
+            })
+            btnHidden.addEventListener('mouseleave', (event) => {
+                gsap.to(chevronIcon, { duration: basicDuration, rotate: '-360deg' })
             })
         });
 
+        {{-- Обработка MouseEnter на строки запросов --}}
         requestRows.forEach((row) => {
             row.addEventListener('mouseenter', (event) => {
+                const rowContainerMenu = row.parentElement.childNodes[3];
                 const btnExpand = findExpandBtn(event);
-                gsap.to(btnExpand, { duration: 0.2, right: '0' })
+                if(!opennedMenuIds.includes(rowContainerMenu.id)) {
+                    gsap.to(btnExpand, { duration: basicDuration, right: '0' });
+                }
             });
             row.addEventListener('mouseleave', (event) => {
                 const btnExpand = findExpandBtn(event);
-                gsap.to(btnExpand, { duration: 0.2, right: '-150px' })
+                gsap.to(btnExpand, { duration: basicDuration, right: '-150px' });
             });
         });
     })
