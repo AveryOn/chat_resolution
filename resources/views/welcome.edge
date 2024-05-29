@@ -149,6 +149,12 @@
                     requiredAuth: false,
                     queries: [{ key: '-', type: '-', required: '-', default: '-' }],
                     pathParams: [ { key: '-', type: '-', 'required': '-', default: '-' } ],
+                    requestExample: `
+                        {
+                            "email": string *,
+                            "password": string *,
+                        }
+                    `,
                     responseExample: `
                     {
                         "data": {
@@ -300,13 +306,24 @@
                                 "url": "/users/create"
                             },
                             "data": {
-                                "id": number,
-                                "name": string,
-                                "lastname": string,
-                                "surname": null | string,
-                                "lastActivity": null | string,
-                                "createdAt": string,
-                                "deletedAt": null | string,
+                                "user": {
+
+                                    "id": number,
+                                    "name": string,
+                                    "lastname": string,
+                                    "surname": null | string,
+                                    "lastActivity": null | string,
+                                    "createdAt": string,
+                                    "deletedAt": null | string,
+                                },
+                                "access_token": {
+                                    "type": "bearer",
+                                    "name": null | string,
+                                    "token": string,
+                                    "abilities": ["*"],
+                                    "lastUsedAt": null | string,
+                                    "expiresAt": string
+                                }
                             }
                         }
                     `
