@@ -3,6 +3,9 @@
 
 <head>
     <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.min.css">
+
     <style>
         * {
             margin: 0;
@@ -127,7 +130,7 @@
 
 {{-- Основная страница --}}
 
-<body>
+<body id="body">
     <div class="body">
         <header class="header-container">
             <h1 class="main-header-title">Messanger API</h1>
@@ -143,12 +146,26 @@
                     title: 'Login into system',
                     descr: 'Пользователь может выполнить авторизацию по эл. почте и паролю',
                     url: '/auth',
+                    requiredAuth: false,
+                    queries: [{ key: 'is_admin', type: 'boolean', required: true, default: false }, { key: 'id', type: 'number', 'required': false, default: '0' }],
+                    pathParams: [ { key: 'user_id', type: 'number', 'required': true, default: null } ],
+                    responseExample: `
+                    { 
+                        "data": { 
+                            "id": "number", 
+                            "name": "string", 
+                            "is_active": "boolean", 
+                            "create_at": "string", 
+                            "updated_at": "string"'
+                        } 
+                    }`
                 })
                 @end
                 {{-- LOGOUT --}}
                 @requestRow({
                     method: 'DELETE',
                     title: 'Logout',
+                    requiredAuth: true,
                     descr: `Запрос очищает авторизационную информацию пользователя и удаляет токен доступа. После такого запроса
                     пользователю необходимо будет выполнить аутентификацию снова`,
                     url: '/auth/logout',
@@ -163,6 +180,7 @@
                 @requestRow({
                     method: 'GET',
                     title: 'Get all users in system',
+                    requiredAuth: true,
                     descr: `
                         Запросить всех пользователей в системе
                         ** Примечание: пользователи чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа
@@ -175,6 +193,7 @@
                 @requestRow({
                     method: 'GET',
                     title: 'Get user BY id',
+                    requiredAuth: true,
                     descr: `
                         Запросить пользователя по id
                         `,
@@ -188,6 +207,7 @@
                     title: 'Creation user',
                     descr: `Запрос на создание пользователя`,
                     url: '/users/create',
+                    requiredAuth: false,
                 })
                 @end
 
@@ -197,6 +217,7 @@
                     title: 'Update user',
                     descr: `Запрос на обновление данных пользователя`,
                     url: '/users/:user_id/update',
+                    requiredAuth: true,
                 })
                 @end
 
@@ -204,6 +225,7 @@
                 @requestRow({
                     method: 'DELETE',
                     title: 'Delete user',
+                    requiredAuth: true,
                     descr: `
                         Запрос на удаление пользователя. 
                         ** Примечание: после выполнения запроса, пользователь выполнивший запрос <Мягко> удаляется из системы **
@@ -219,6 +241,7 @@
                 @requestRow({
                     method: 'GET',
                     title: 'Get all chats for user',
+                    requiredAuth: true,
                     descr: `
                         Запрос на получение всех чатов пользователя ** Примечание: 
                         * Чаты чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа.
@@ -232,6 +255,7 @@
                 @requestRow({
                     method: 'GET',
                     title: 'Get chat BY id',
+                    requiredAuth: true,
                     descr: `
                         Запросить чат по id
                         `,
@@ -245,6 +269,7 @@
                     title: 'Creation chat',
                     descr: `Запрос на создание чата`,
                     url: '/chats/create',
+                    requiredAuth: true,
                 })
                 @end
 
@@ -254,6 +279,7 @@
                     title: 'Update chat',
                     descr: `Запрос на обновление данных чата`,
                     url: '/chats/:id/update',
+                    requiredAuth: true,
                 })
                 @end
 
@@ -261,6 +287,8 @@
                 @requestRow({
                     method: 'DELETE',
                     title: 'Delete chat',
+                    requiredAuth: true,
+                    requiredAuth: true,
                     descr: `
                         Запрос на удаление чата. 
                         ** Примечание: после выполнения запроса, чат <Мягко> удаляется из системы **
@@ -276,6 +304,7 @@
                 @requestRow({
                     method: 'GET',
                     title: 'Get all messages of chat',
+                    requiredAuth: true,
                     descr: `
                         Запрос на получение сообщений в чате ** Примечание:
                         * сообщений чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа.
@@ -290,6 +319,7 @@
                 @requestRow({
                     method: 'GET',
                     title: 'Get message BY id',
+                    requiredAuth: true,
                     descr: `
                         Запросить сообщение по id
                     `,
@@ -302,6 +332,7 @@
                     method: 'POST',
                     title: 'Creation message',
                     descr: `Запрос на создание сообщения`,
+                    requiredAuth: true,
                     url: '/create',
                 })
                 @end
@@ -311,6 +342,7 @@
                     method: 'PUT',
                     title: 'Edit message',
                     descr: `Запрос на редактирование сообщения`,
+                    requiredAuth: true,
                     url: '/:id/update',
                 })
                 @end
@@ -319,6 +351,7 @@
                 @requestRow({
                     method: 'DELETE',
                     title: 'Delete message',
+                    requiredAuth: true,
                     descr: `
                     Запрос на удаление сообщение.
                     ** Примечание: сообщение удаляется из системы <Мягко> **
@@ -327,19 +360,91 @@
                 })
                 @end
             @end
-
         </main>
-
-
     </div>
     <div class="bg-stub">
         <h1 class="bg-stub__title">Messanger API</h1>
     </div>
 </body>
 
-<script>
-    console.log('Раньше здесь был мат... туц')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js"></script>
 
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        Prism.highlightAll();
+
+        let opennedMenuIds = [];
+
+        {{-- Выполнить анимацию раворачивания info menu --}}
+        function expandInfoMenu(menu, btnExpand) {
+            let queriesBlock;
+            menu.childNodes.forEach((node => {
+                if(node.classList && node.classList.value.split(' ').includes('menu__queries-block')) {
+                    queriesBlock = node;
+                }
+            }));
+            if(!queriesBlock) throw 'Не удалось получить DOM: queriesBlock';
+            let duration = 0.4;
+            // Свернуть инфо блок
+            if(opennedMenuIds.includes(menu.id)) {
+                opennedMenuIds = opennedMenuIds.filter(id => menu.id != id);
+                return gsap.to(menu, { duration, height: '0px', padding: '0', zIndex: '-1'  })
+            }
+            opennedMenuIds.push(menu.id);
+            const tl = gsap.timeline();
+            tl.to(menu, { duration, height: 'max-content', padding: '1rem', zIndex:'12' })
+            console.log(btnExpand)
+            tl.to(btnExpand, { duration, bottom: '10px' })
+            
+        }
+
+        {{-- Найти DOM кнопки расширения инфо меню  --}}
+        function findExpandBtn(event) {
+            return event.target.childNodes[7].childNodes[3]
+        }
+
+        {{-- Найти DOM информационного блока на который произошел клик --}}
+        function findInfoMenu(event) {
+            let targetEl = event.target.parentElement;
+            let btnExpand = event.target;
+            if(targetEl.classList && targetEl.classList.value.split(' ').includes('btn-expand')) {
+                targetEl = targetEl.parentElement;
+            }
+            let infoMenu;
+            targetEl.parentElement.parentElement.childNodes.forEach((node) => {
+                if(node.classList && node.classList.value.split(' ').includes('request-info-menu')) {
+                    return infoMenu = node;
+                }
+            });
+            if(infoMenu) {
+                return expandInfoMenu(infoMenu, btnExpand);
+            } else throw 'Ошибка при получении DOM элемента информационного меню'
+        }
+        const requestRows = document.querySelectorAll('.request-row-header');
+        let btnsExpand = document.querySelectorAll('.btn-expand'); 
+        btnsExpand.forEach((btnExpand) => {
+            btnExpand.addEventListener('click', findInfoMenu)
+            let chevronIcon = btnExpand.childNodes[1]
+            btnExpand.addEventListener('mouseenter', () => {
+                gsap.to(chevronIcon, { duration: 0.3, rotate: '360deg' })
+            })
+            btnExpand.addEventListener('mouseleave', (event) => {
+                gsap.to(chevronIcon, { duration: 0.2, rotate: '-360deg' })
+            })
+        });
+
+        requestRows.forEach((row) => {
+            row.addEventListener('mouseenter', (event) => {
+                const btnExpand = findExpandBtn(event);
+                gsap.to(btnExpand, { duration: 0.2, right: '0' })
+            });
+            row.addEventListener('mouseleave', (event) => {
+                const btnExpand = findExpandBtn(event);
+                gsap.to(btnExpand, { duration: 0.2, right: '-150px' })
+            });
+        });
+    })
 </script>
 
-</html
+</html>
