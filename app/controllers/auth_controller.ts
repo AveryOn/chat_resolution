@@ -3,6 +3,7 @@ import { validCredentials } from '#validators/auth_valide'
 import User from '#models/user';
 import { AccessToken } from '@adonisjs/auth/access_tokens';
 import { UserAndToken } from '#types/user_types';
+import hash from '@adonisjs/core/services/hash'
 
 export default class AuthControllersController {
 
@@ -10,48 +11,63 @@ export default class AuthControllersController {
     async confirmCredenials({ request, response }: HttpContext) {
         try {
             // Валидация полученных email и password
+            let valideData;
             const rawData = request.only(['email', 'password']);
-            const valideData = await validCredentials.validate(rawData);
+            try {
+                valideData = await validCredentials.validate(rawData);
+            } catch (err) {
+                throw {
+                    meta: { code: 'error', status: 422, url: request.url(true) },
+                    data: {
+                        messages: err?.messages,
+                        preview: 'Проверьте корректность введенных данных'
+                    },
+                }
+            }
 
             // Получение текущего пользователя по email
             const fetchedUser = await User.query().select('*').where('email', valideData.email).first();
-            if (fetchedUser) {
-                // Удаление существующих токенов пользователя если они есть
-                const userTokens = await User.accessTokens.all(fetchedUser);
-                userTokens.forEach(async (token: AccessToken) => {
-                    token && await User.accessTokens.delete(fetchedUser, token.identifier)
-                });
 
-                // Создание нового токена доступа
-                const token: AccessToken = await User.accessTokens.create(fetchedUser, ['*']);
+            // Проверка соответствия пароля
+            const isPasswordVerify: boolean = await hash.verify(fetchedUser!.password, valideData.password);
 
-                // Исключение поля password для формирования ответа
-                const user = fetchedUser.toJSON();
-                delete user.password;
-
-                response.send({ data: { user, access_token: token } });
-            } else {
+            // Если пользователь не был найден по email или если пароль не верный то возвращается ошибка на клиент
+            if(!fetchedUser || isPasswordVerify !== true) {
                 return response.abort({
-                    meta: { status: 'error', code: 422, url: request.url(true) },
-                    data: 'Пользователь c таким E-mail не найден',
+                    meta: { code: 'error', status: 422, url: request.url(true) },
+                    data: {
+                        preview: 'Учётные данные не верны',
+                    }
                 });
             }
+
+            // Удаление существующих токенов пользователя если они есть
+            const userTokens = await User.accessTokens.all(fetchedUser);
+            userTokens.forEach(async (token: AccessToken) => {
+                token && await User.accessTokens.delete(fetchedUser, token.identifier)
+            });
+
+            // Создание нового токена доступа
+            const token: AccessToken = await User.accessTokens.create(fetchedUser, ['*']);
+
+            // Исключение поля password для формирования ответа
+            const user = fetchedUser.toJSON();
+            delete user.password;
+
+            response.send({ data: { user, access_token: token } });
         } catch (err) {
             console.error(`auth_controller: confirmCredenials  => ${err}`);
-            response.abort({
-                meta: { status: 'error', code: 500, url: request.url(true) },
-                data: 'Internal Server Error'
-            })
+            response.abort(err)
         }
     }
 
     // Выход из системы. Разлогинится
-    async logout({request, response, auth}: HttpContext) {
+    async logout({ request, response, auth }: HttpContext) {
         try {
             const user: UserAndToken = await auth.authenticate();
             const token = user.currentAccessToken;
             await User.accessTokens.delete(user, token.identifier);
-            response.send({meta: { status: 'success', code: 200, url: request.url(true) }, data: null});
+            response.send({ meta: { status: 'success', code: 200, url: request.url(true) }, data: null });
         } catch (err) {
             console.error(`auth_controller: logout  => ${err}`);
             response.abort({
