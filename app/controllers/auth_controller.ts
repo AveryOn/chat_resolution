@@ -24,7 +24,6 @@ export default class AuthControllersController {
                     },
                 }
             }
-
             // Получение текущего пользователя по email
             const fetchedUser = await User.query().select('*').where('email', valideData.email).first();
 
