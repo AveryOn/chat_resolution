@@ -17,6 +17,12 @@ router.group(() => {
     router.delete('/logout', '#controllers/auth_controller.logout').as('logout');
 }).prefix('auth');
 
+// PROFILE ROUTES
+router.group(() => {
+    router.post('/create', '#controllers/profiles_controller.store').as('profile-create');
+    router.get('/me', '#controllers/profiles_controller.getMyProfile').as('profile-me');
+}).prefix('profile');
+
 // USERS ROUTES
 router.group(() => {
     router.get('/', '#controllers/users_controller.getUsers').as('get-users');  // Get users

@@ -20,7 +20,7 @@ export default class AuthControllersController {
                     meta: { code: 'error', status: 422, url: request.url(true) },
                     data: {
                         messages: err?.messages,
-                        preview: 'Проверьте корректность введенных данных'
+                        preview: 'Проверьте корректность введенных данных',
                     },
                 }
             }
