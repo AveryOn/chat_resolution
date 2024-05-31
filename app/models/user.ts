@@ -1,11 +1,12 @@
 import { DateTime } from 'luxon';
 import hash from '@adonisjs/core/services/hash';
 import { compose } from '@adonisjs/core/helpers';
-import { BaseModel, column, manyToMany } from '@adonisjs/lucid/orm';
+import { BaseModel, column, manyToMany, hasOne } from '@adonisjs/lucid/orm';
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid';
 import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens';
-import type { ManyToMany } from '@adonisjs/lucid/types/relations';
+import type { ManyToMany, HasOne } from '@adonisjs/lucid/types/relations';
 import Chat from '#models/chat';
+import Profile from '#models/profile';
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
     uids: ['email'],
@@ -52,6 +53,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
     declare chats: ManyToMany<typeof Chat>;
 
 
+    @hasOne(() => Profile)
+    declare profile: HasOne<typeof Profile>;
+
     static accessTokens = DbAccessTokensProvider.forModel(User, {
         expiresIn: '30 days',
         prefix: 'cht_',
@@ -59,6 +63,5 @@ export default class User extends compose(BaseModel, AuthFinder) {
         type: 'auth_token',
         tokenSecretLength: 40,
     });
-
 
 }

@@ -148,7 +148,7 @@
                     url: '/auth',
                     requiredAuth: false,
                     queries: [{ key: '-', type: '-', required: '-', default: '-' }],
-                    pathParams: [ { key: '-', type: '-', 'required': '-', default: '-' } ],
+                    pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
                     requestExample: `
                         {
                             "email": string *,
@@ -208,6 +208,71 @@
                 })
                 @end
             @end
+
+
+{{--=================================================  PROFILE GROUP  =========================================================--}}
+            @requestsBlock({ title: 'PROFILE ENDPOINTS', colorFg: 'rgb(228, 80, 118)' })
+                {{-- CREATE PROFILE --}}
+                @requestRow({
+                    method: 'POST',
+                    title: 'Create user profile',
+                    descr: 'Запрос на создание пользовательского профиля',
+                    url: '/profile/create',
+                    requiredAuth: true,
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
+                    requestExample: `
+                        {
+                            "name": string *,
+                            "lastname": string *,
+                            "surname": string *,
+                            "email": string *,
+                            "gender": 0 | 1 | 2  ?,
+                            "phoneNumber": string ?,
+                            "login": string ?,
+                            "avatar": $binary ?, 
+                            "birthAt": string ?,
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/profile/create"
+                            },
+                            "data": {
+                                "id": number,
+                                "userId": number,
+                                "name": string,
+                                "lastname": string,
+                                "surname": string | null,
+                                "email": string,
+                                "phoneNumber": string | null,
+                                "login": string | null,
+                                "gender": number | null,
+                                "createdAt": string,
+                                "updatedAt": string | null
+                            }
+                        }
+                    `
+                })
+                @end
+                {{-- GET MY PROFILE --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get user profile',
+                    requiredAuth: true,
+                    descr: `Запрос на получение профиля пользоватля`,
+                    url: '/profile/me',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', 'required': '-', default: '-' } ],
+                    requestExample: undefined,
+                    responseExample: undefined
+                })
+                @end
+            @end
+
 
 {{--=================================================  USERS GROUP  =========================================================--}}
             @requestsBlock({ title: 'USERS ENDPOINTS', colorFg: 'rgb(80, 204, 194)' })
