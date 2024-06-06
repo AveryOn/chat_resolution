@@ -11,9 +11,11 @@ import router from '@adonisjs/core/services/router';
 
 router.get('/docs', '#controllers/docs_controller.getDocs')
 
+
 // AUTH ROUTES
 router.group(() => {
     router.post('/', '#controllers/auth_controller.confirmCredenials').as('auth');
+    router.get('/check', '#controllers/auth_controller.authenticateCheck').as('auth-check')
     router.delete('/logout', '#controllers/auth_controller.logout').as('logout');
 }).prefix('auth');
 
