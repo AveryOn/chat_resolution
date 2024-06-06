@@ -75,4 +75,21 @@ export default class AuthControllersController {
             })
         }
     }
+
+    async authenticateCheck({request, response, auth}: HttpContext) {
+        try {
+            const confirmed: boolean = await auth.check();
+            response.send({
+                meta: { status: 'success', code: 200, url: request.url(true) },
+                data: confirmed,
+            })
+        } catch (err) {
+            console.error(`auth_controller: authenticateCheck  => Ошибка при проверке токена доступа`);
+            response.abort({
+                meta: { status: 'error', code: 401, url: request.url(true) },
+                data: 'Ошибка при проверке токена доступа',
+            })
+        }
+    }
+
 }

@@ -6,6 +6,8 @@ import User from "#models/user";
 import { AccessToken } from "@adonisjs/auth/access_tokens";
 import { UserAndToken, UsersPaginator } from '#types/user_types';
 import { initUserPaginator } from '#utils/meta_utils';
+import { createNewProfile } from '#utils/profiles_utils';
+import Profile from '#models/profile';
 
 export default class UsersController {
 
@@ -81,7 +83,7 @@ export default class UsersController {
                 .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at', 'deleted_at'])
                 .where('id', userId)
                 .first();
-                
+
             await trx.commit();
 
             // Формируем ответ для клиента
@@ -105,11 +107,22 @@ export default class UsersController {
             const validData = await validBodyUser.validate(rawData)
             // Создание нового пользователя
             const user: User = await User.create({ ...validData });
+
             // Создание токена доступа
             const token: AccessToken = await User.accessTokens.create(user);
+
+            // Создание профиля пользователя
+            const profile: Profile = await createNewProfile({
+                email: user.email,
+                lastname: user.lastname,
+                name: user.name,
+                surname: user.surname,
+            });
+            // Привязка отношения между пользователем и его профилем
+            await user.related('profile').save(profile);
+            await user.load('profile');
             const userReadyJSON = user.toJSON();
             delete userReadyJSON.password;
-            console.log(userReadyJSON);
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: { user: userReadyJSON, access_token: token },
@@ -122,7 +135,7 @@ export default class UsersController {
             })
         }
     }
-    
+
     // Обновление данных пользователя
     async updateUser({ request, response, auth }: HttpContext) {
         try {

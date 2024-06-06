@@ -4,7 +4,7 @@ import { DateTime } from "luxon";
 type InputDataProfile = {
     name: string;
     lastname: string;
-    surname?: string;
+    surname?: string | null;
     email: string;
     phoneNumber?: string;
     login?: string;

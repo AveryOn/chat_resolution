@@ -185,6 +185,28 @@
                     `
                 })
                 @end
+                {{-- AUTH CHECK --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Authentication test request',
+                    descr: 'Тестовый запрос для проверки токена доступа',
+                    url: '/auth/check',
+                    requiredAuth: true,
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/auth/check"
+                            },
+                            "data": boolean
+                        }
+                    `
+                })
+                @end
                 {{-- LOGOUT --}}
                 @requestRow({
                     method: 'DELETE',
@@ -250,7 +272,9 @@
                                 "email": string,
                                 "phoneNumber": string | null,
                                 "login": string | null,
+                                "avatar": string | null,
                                 "gender": number | null,
+                                "birthAt": string | null,
                                 "createdAt": string,
                                 "updatedAt": string | null
                             }
@@ -381,12 +405,28 @@
                                     "createdAt": string,
                                     "deletedAt": null | string,
                                 },
+                                "profile": {
+                                    "id": number,
+                                    "name": string,
+                                    "lastname": string,
+                                    "surname": string | null,
+                                    "gender": 0 | 1 | 2 | null,
+                                    "phoneNumber": string | null,
+                                    "email": string,
+                                    "login": string | null,
+                                    "avatar": string | null,
+                                    "birthAt": string | null,
+                                    "userId": number,
+                                    "createdAt": string,
+                                    "updatedAt": string | null,
+                                    "deletedAt": string | null
+                                },
                                 "access_token": {
                                     "type": "bearer",
-                                    "name": null | string,
+                                    "name": string | null,
                                     "token": string,
                                     "abilities": ["*"],
-                                    "lastUsedAt": null | string,
+                                    "lastUsedAt": string | null,
                                     "expiresAt": string
                                 }
                             }
