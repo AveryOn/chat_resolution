@@ -4,6 +4,7 @@
         --color-bg: rgba(128, 128, 128, 0.39);
         --color-fg: rgba(238, 238, 238, 0.76);
         --color-method-fg: rgb(17, 17, 17);
+        --color-patch-bg: rgb(225, 228, 53);
         --color-put-bg: rgb(145, 55, 218);
         --color-post-bg: rgb(218, 133, 55);
         --color-get-bg: rgb(71, 206, 89);
@@ -30,6 +31,9 @@
         {{-- border: 1px solid rgb(123, 255, 0); --}}
         display: flex;
         justify-content: space-around;
+    }
+    .method-patch {
+        box-shadow: var(--shadow-row) var(--color-patch-bg);
     }
     .method-put {
         box-shadow: var(--shadow-row) var(--color-put-bg);
@@ -71,6 +75,10 @@
     }
     .delete {
         background-color: var(--color-delete-bg);
+        color: var(--color-method-fg);
+    }
+    .patch {
+        background-color: var(--color-patch-bg);
         color: var(--color-method-fg);
     }
     .put {

@@ -56,6 +56,19 @@ export default class ProfilesController {
             response.abort(err);
         }
     }
+    async putDataProfile({ request, response, auth }: HttpContext) {
+        try {
+            // Аутентификация
+            await auth.authenticate();
+
+            response.send({ 
+                meta: { status: 'success', code: 200, url: request.url(true) }, 
+                data: null,
+            });
+        } catch (err) {
+            response.abort(err);
+        }
+    }
 
     // Получить мой профиль
     async getMyProfile({request, response, auth}: HttpContext) {

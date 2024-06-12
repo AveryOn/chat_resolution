@@ -23,7 +23,7 @@ router.group(() => {
 router.group(() => {
     router.post('/create', '#controllers/profiles_controller.store').as('profile-create');
     router.patch('/:id/update-one', '#controllers/profiles_controller.patchDataProfile').as('profile-patch');
-    // router.put('/:id/update', '#controllers/profiles_controller.store').as('profile-patch');
+    router.put('/:id/update', '#controllers/profiles_controller.putDataProfile').as('profile-put');
     router.get('/me', '#controllers/profiles_controller.getMyProfile').as('profile-me');
 }).prefix('profile');
 
