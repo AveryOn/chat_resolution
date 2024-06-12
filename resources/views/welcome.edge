@@ -234,6 +234,7 @@
 
 {{--=================================================  PROFILE GROUP  =========================================================--}}
             @requestsBlock({ title: 'PROFILE ENDPOINTS', colorFg: 'rgb(228, 80, 118)' })
+            
                 {{-- CREATE PROFILE --}}
                 @requestRow({
                     method: 'POST',
@@ -282,6 +283,56 @@
                     `
                 })
                 @end
+
+                {{-- PATCH PROFILE --}}
+                @requestRow({
+                    method: 'POST',
+                    title: 'Create user profile',
+                    descr: 'Запрос на создание пользовательского профиля',
+                    url: '/profile/create',
+                    requiredAuth: true,
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
+                    requestExample: `
+                        {
+                            "name": string *,
+                            "lastname": string *,
+                            "surname": string *,
+                            "email": string *,
+                            "gender": 0 | 1 | 2  ?,
+                            "phoneNumber": string ?,
+                            "login": string ?,
+                            "avatar": $binary ?, 
+                            "birthAt": string ?,
+                        }
+                    `,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/profile/create"
+                            },
+                            "data": {
+                                "id": number,
+                                "userId": number,
+                                "name": string,
+                                "lastname": string,
+                                "surname": string | null,
+                                "email": string,
+                                "phoneNumber": string | null,
+                                "login": string | null,
+                                "avatar": string | null,
+                                "gender": number | null,
+                                "birthAt": string | null,
+                                "createdAt": string,
+                                "updatedAt": string | null
+                            }
+                        }
+                    `
+                })
+                @end
+                
                 {{-- GET MY PROFILE --}}
                 @requestRow({
                     method: 'GET',
