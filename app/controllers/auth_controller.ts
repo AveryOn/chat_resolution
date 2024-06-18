@@ -55,6 +55,7 @@ export default class AuthControllersController {
 
             response.send({ data: { user, access_token: token } });
         } catch (err) {
+            console.error(err);
             console.error(`auth_controller: confirmCredenials  => ${err}`);
             response.abort(err)
         }

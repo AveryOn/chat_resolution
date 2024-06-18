@@ -418,6 +418,28 @@
                     `
                 })
                 @end
+
+                {{-- DELETE PROFILE --}}
+                @requestRow({
+                    method: 'DELETE',
+                    title: 'Delete user profile',
+                    descr: 'Запрос на мягкое удаление пользовательского профиля',
+                    url: '/profile/:id/delete',
+                    requiredAuth: true,
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: 'id', type: 'number', required: true, default: '-' } ],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/profile/:id/delete"
+                            },
+                            "data": null
+                    `
+                })
+                @end
             @end
 
 

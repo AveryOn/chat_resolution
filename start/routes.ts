@@ -25,6 +25,7 @@ router.group(() => {
     router.patch('/:id/update-one', '#controllers/profiles_controller.patchDataProfile').as('profile-patch');
     router.put('/:id/update', '#controllers/profiles_controller.putDataProfile').as('profile-put');
     router.get('/me', '#controllers/profiles_controller.getMyProfile').as('profile-me');
+    router.delete('/:id/delete', '#controllers/profiles_controller.deleteMyProfile').as('profile-delete');
 }).prefix('profile');
 
 // USERS ROUTES
