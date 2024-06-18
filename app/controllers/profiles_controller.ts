@@ -129,6 +129,7 @@ export default class ProfilesController {
                 data: profile.toJSON(),
             });
         } catch (err) {
+            console.error(err)
             response.abort(err);
         }
     }
