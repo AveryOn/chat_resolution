@@ -119,10 +119,11 @@ export default class ProfilesController {
         try {
             // Аутентификация запроса
             const user: User = await auth.authenticate();
-
+            
             const profile = await user.related('profile').query().first();
             if (!profile) throw 'Не удалось получить профиль пользователя';
-
+            
+            console.log('profile', profile.toJSON())
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: profile.toJSON(),
