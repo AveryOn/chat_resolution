@@ -4,6 +4,8 @@ import { createNewProfile } from '#utils/profiles_utils';
 import Profile from '#models/profile';
 import User from '#models/user';
 import { DateTime } from 'luxon';
+import { UserAndToken } from '#types/user_types';
+import { AccessToken } from '@adonisjs/auth/access_tokens';
 
 export default class ProfilesController {
     async store({ request, response, auth }: HttpContext) {
@@ -119,10 +121,10 @@ export default class ProfilesController {
         try {
             // Аутентификация запроса
             const user: User = await auth.authenticate();
-            
+
             const profile = await user.related('profile').query().first();
             if (!profile) throw 'Не удалось получить профиль пользователя';
-            
+
             console.log('profile', profile.toJSON())
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
@@ -138,13 +140,19 @@ export default class ProfilesController {
     async deleteMyProfile({ request, response, auth }: HttpContext) {
         try {
             // Аутентификация запроса
-            const user: User = await auth.authenticate();
-            const { id } = request.params();
-            const profile: Profile = await Profile.findOrFail(id);
+            const user: UserAndToken = await auth.authenticate();
+            const token = user.currentAccessToken;
 
+            const { id } = request.params();
+
+            const profile: Profile = await Profile.findOrFail(id);
             const currentDate = DateTime.local()
             user.deletedAt = currentDate;
             profile.deletedAt = currentDate;
+
+            // Удаление токена
+            await User.accessTokens.delete(user, token.identifier);
+
 
             await user.save();
             await profile.save();
@@ -152,6 +160,36 @@ export default class ProfilesController {
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: null,
+            });
+        } catch (err) {
+            response.abort(err);
+        }
+    }
+
+    // Восстановить мой профиль (после удаления)
+    async restoreMyProfile({ request, response, auth }: HttpContext) {
+        try {
+            // Аутентификация запроса
+            const user: User = await auth.authenticate();
+            const { id } = request.params();
+            const profile: Profile = await Profile.findOrFail(id);
+
+            user.deletedAt = null;
+            profile.deletedAt = null;
+            await user.save();
+            await profile.save();
+
+            const readyUser = user.toJSON();
+            const readyProfile = profile.toJSON();
+            delete readyProfile.deletedAt;
+            readyUser.profile = readyProfile
+            delete readyUser.password;
+            delete readyUser.deletedAt;
+            delete readyUser.role;
+
+            response.send({
+                meta: { status: 'success', code: 200, url: request.url(true) },
+                data: { user: readyUser },
             });
         } catch (err) {
             response.abort(err);

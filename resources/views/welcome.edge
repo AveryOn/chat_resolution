@@ -440,6 +440,54 @@
                     `
                 })
                 @end
+
+                {{-- RESTORE PROFILE --}}
+                @requestRow({
+                    method: 'POST',
+                    title: 'Restore user profile',
+                    descr: 'Запрос на восстановление пользовательского профиля (после удаления)',
+                    url: '/profile/:id/restore',
+                    requiredAuth: true,
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: 'id', type: 'number', required: true, default: '-' } ],
+                    requestExample: undefined,
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/profile/:id/restore"
+                            },
+                            "data": {
+                                "user": {
+                                    "id": number,
+                                    "name": string,
+                                    "lastname": string,
+                                    "surname": string | null,
+                                    "email": string,
+                                    "lastActivity": string | null,
+                                    "createdAt": string,
+                                    "updatedAt": string,
+                                    "profile": {
+                                        "id": number,
+                                        "name": string,
+                                        "lastname": string,
+                                        "surname": string | null,
+                                        "gender": number | null,
+                                        "phoneNumber": string | null,
+                                        "email": string,
+                                        "login": string | null,
+                                        "avatar": string | null,
+                                        "birthAt": string | null,
+                                        "userId": number,
+                                        "createdAt": string,
+                                        "updatedAt": string
+                                    }
+                                }
+                            }
+                    `
+                })
+                @end
             @end
 
 

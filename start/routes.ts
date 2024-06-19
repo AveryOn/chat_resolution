@@ -26,6 +26,7 @@ router.group(() => {
     router.put('/:id/update', '#controllers/profiles_controller.putDataProfile').as('profile-put');
     router.get('/me', '#controllers/profiles_controller.getMyProfile').as('profile-me');
     router.delete('/:id/delete', '#controllers/profiles_controller.deleteMyProfile').as('profile-delete');
+    router.post('/:id/restore', '#controllers/profiles_controller.restoreMyProfile').as('profile-restore');
 }).prefix('profile');
 
 // USERS ROUTES
