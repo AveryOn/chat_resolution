@@ -423,7 +423,7 @@
                 @requestRow({
                     method: 'DELETE',
                     title: 'Delete user profile',
-                    descr: 'Запрос на мягкое удаление пользовательского профиля',
+                    descr: 'Запрос на мягкое удаление пользовательского профиля. При удалении профиля, также удаляется и токен доступа',
                     url: '/profile/:id/delete',
                     requiredAuth: true,
                     queries: [{ key: '-', type: '-', required: '-', default: '-' }],
