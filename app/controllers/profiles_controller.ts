@@ -58,7 +58,10 @@ export default class ProfilesController {
                 user.email = valideData.email;
             }
             if (valideData.avatar) profile.avatar = valideData.avatar;
-            if (valideData.birthAt) profile.birthAt = valideData.birthAt;
+            if (valideData.birthAt) {
+                const birthAt = new Date(valideData.birthAt);
+                profile.birthAt = birthAt;
+            }
             if (valideData.gender) profile.gender = valideData.gender;
             if (valideData.login) profile.login = valideData.login;
             if (valideData.phoneNumber) profile.phoneNumber = valideData.phoneNumber;

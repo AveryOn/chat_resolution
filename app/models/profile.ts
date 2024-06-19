@@ -32,7 +32,7 @@ export default class Profile extends BaseModel {
     declare avatar?: string | null;
 
     @column()
-    declare birthAt?: DateTime | string;
+    declare birthAt?: DateTime | string | Date;
 
     @column()
     declare userId: number;
