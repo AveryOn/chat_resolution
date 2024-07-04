@@ -23,6 +23,8 @@ import {
 } from '#utils/messages_utils';
 import { ModelObject } from '@adonisjs/lucid/types/model';
 import { messageDeleteEmit, messageNewEmit, messageUpdateEmit } from '#socket/emits/message_emits';
+import UserChats from '#models/users_chat';
+import { log } from 'console';
 
 export default class MessagesController {
 
@@ -158,17 +160,40 @@ export default class MessagesController {
             }
             let chat: Chat;
             try {
-                // Если поле chat_id равно null, значит необходимо создать новый чат
+                /*  Если поле chat_id равно null, значит необходимо УБЕДИТСЯ что чата действительно не существует между
+                    пользователями from_user_id и to_user_id. И если чата действительно нет то создаем новый чат и добавляем в него сообщение 
+                */
                 if (validData!.chat_id === null) {
-                    chat = await Chat.create({
-                        creator: validData!.from_user_id,
-                        visible: true,
-                    });
-                    // Привязываем чат к его участникам
-                    if (validData!.to_user_id) {
-                        await chat.related('users').attach([validData!.from_user_id, validData!.to_user_id]);
-                    } else {
-                        await chat.related('users').attach([validData!.from_user_id]);
+                    // Проверяем наличие чата между двумя пользователями
+                    // Пример data: { chatId: number } | undefined
+                    const data = (await UserChats.query()
+                        .select('chat_id')
+                        .where('user_id', validData!.from_user_id)
+                        .orWhere('user_id', validData!.to_user_id)
+                        .groupBy('chat_id')
+                        .havingRaw('COUNT(DISTINCT user_id) = 2') // Убедится, что оба пользователя связаны с тем же чатом
+                        .first())?.toJSON();
+
+                    if(!data) {
+                        chat = await Chat.create({
+                            creator: validData!.from_user_id,
+                            visible: true,
+                        });
+                        // Привязываем чат к его участникам
+                        if (validData!.to_user_id) {
+                            await chat.related('users').attach([validData!.from_user_id, validData!.to_user_id]);
+                        } else {
+                            await chat.related('users').attach([validData!.from_user_id]);
+                        }
+                    } 
+                    // Если чат уже существует между двумя пользователями
+                    else if(data) {
+                        chat = await user.related('chats')
+                            .query()
+                            .select('*')
+                            .whereNull('chats.deleted_at')  // Исключаем из запроса удаленные чаты
+                            .where('chats.id', data?.chatId)
+                            .firstOrFail();
                     }
                 }
                 // Если поле chat_id есть то получаем существующий чат 
@@ -181,10 +206,10 @@ export default class MessagesController {
                         .firstOrFail();
                 }
                 const toUser: User = await User.findOrFail(validData!.to_user_id);
-                await message.related('chat').associate(chat);
+                await message.related('chat').associate(chat!);
                 await message.related('toUser').associate(toUser);
                 await message.related('fromUser').associate(user);
-                // await message.save();
+                await message.save();
                 await message.load('chat');
             } catch (err) {
                 throw err;
