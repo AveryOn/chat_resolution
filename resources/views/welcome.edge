@@ -928,7 +928,10 @@
                         * Для этого запроса доступен объект пагинатора
                     `,
                     url: '/messages/chat/:chat_id',
-                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    queries: [
+                        { key: 'page', type: 'number', required: false, default: '-' }, 
+                        { key: 'per_page', type: 'number', required: false, default: '-' }, 
+                    ],
                     pathParams: [{ key: 'chat_id', type: 'number', required: true, default: '-' }],
                     requestExample: undefined,
                     responseExample: `
