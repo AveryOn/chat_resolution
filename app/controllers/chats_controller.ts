@@ -17,9 +17,7 @@ export default class ChatsController {
 
     // Получение чата по ID 
     async getChatById({ request, response, auth }: HttpContext) {
-        const trx = await db.transaction();
         try {
-
             // Аутентификация
             await auth.authenticate();
             const { id } = request.params();
@@ -27,24 +25,25 @@ export default class ChatsController {
             const { id: chatId } = await validParamsGetChat.validate({ id });
 
             // Получение чата по ID
+            const chatTrx = await db.transaction();
             let chat: Chat;
             try {
-                chat = await Chat.findOrFail(chatId, { client: trx });
+                chat = await Chat.findOrFail(chatId, { client: chatTrx });
                 // Если временная метка удаления есть то чат считается удаленным
                 if (chat.deletedAt) throw { status: 404 }
+                await chatTrx.commit();
             } catch (err) {
+                await chatTrx.rollback();
                 if (err?.status === 404) throw {
                     meta: { status: 'error', code: 404, url: request.url(true) },
                     data: 'Чат c таким ID не найден',
                 }
             }
-            await trx.commit();
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: chat!.toJSON(),
             })
         } catch (err) {
-            await trx.rollback();
             console.error(`chats_controller: getChatById  => ${err?.data ?? err}`);
             response.abort(err, err?.meta.code);
         }
@@ -52,12 +51,11 @@ export default class ChatsController {
 
     // Получение всех чатов для пользователя
     async getChats({ request, response, auth }: HttpContext) {
-        const trx = await db.transaction();
         try {
 
             // Аутентификация
             const user: User = await auth.authenticate();
-
+ 
             // Получение параметров запроса
             const queries = request.qs();
             let validQueries;
@@ -87,9 +85,10 @@ export default class ChatsController {
                     if (paginator) return (paginator.currentPage - 1) * paginator.perPage;
                     else return 0;
                 }
+                const userTrx = await db.transaction();
                 try {
                     // Получить пользователя по ID и загрузить его чаты вместе с пользователями этих чатов
-                    const fecthedUser = await User.query({ client: trx })
+                    const fecthedUser = await User.query({ client: userTrx })
                         .where('id', user.id)
                         .preload('chats', (chatsQuery) => {
                             chatsQuery
@@ -107,16 +106,19 @@ export default class ChatsController {
                         .firstOrFail();
 
                     chats = fecthedUser.chats;
+                    await userTrx.commit();
                 } catch (err) {
+                    await userTrx.rollback();
                     throw {
                         meta: { status: 'error', code: 400, url: request.url(true) },
                         data: 'Не удалось получить чаты [with pagination]',
                     }
                 }
             } else {
+                const userTrx = await db.transaction();
                 try {
                     // Получить пользователя по ID и загрузить его чаты вместе с пользователями этих чатов
-                    const fecthedUser = await User.query({ client: trx })
+                    const fecthedUser = await User.query({ client: userTrx })
                         .where('id', user.id)
                         .preload('chats', (chatsQuery) => {
                             chatsQuery
@@ -130,22 +132,21 @@ export default class ChatsController {
                                 });
                         })
                         .firstOrFail();
-
                     chats = fecthedUser.chats;
+                    await userTrx.commit();
                 } catch (err) {
+                    await userTrx.rollback();
                     throw {
                         meta: { status: 'error', code: 400, url: request.url(true) },
                         data: 'Не удалось получить чаты [without pagination]',
                     }
                 }
             }
-            await trx.commit();
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true), paginator },
                 data: chats,
             })
         } catch (err) {
-            await trx.rollback();
             console.error(`chats_controller: getChats  => ${err?.data ?? err}`);
             response.abort(err, err?.meta?.code ?? 500);
         }
