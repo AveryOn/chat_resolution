@@ -11,6 +11,7 @@ import router from '@adonisjs/core/services/router';
 
 router.get('/docs', '#controllers/docs_controller.getDocs')
 
+router.post('/test', '#controllers/tests_controller.store');
 
 // AUTH ROUTES
 router.group(() => {
