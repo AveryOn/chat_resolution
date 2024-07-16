@@ -1,7 +1,8 @@
 import { DateTime } from 'luxon';
 import User from '#models/user'
-import { BaseModel, column, belongsTo, manyToMany } from '@adonisjs/lucid/orm';
-import type { BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, belongsTo, manyToMany, hasMany } from '@adonisjs/lucid/orm';
+import type { BelongsTo, HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
+import Message from '#models/message';
 
 
 export default class Chat extends BaseModel {
@@ -33,4 +34,7 @@ export default class Chat extends BaseModel {
 
     @belongsTo(() => User)
     declare user: BelongsTo<typeof User>
+
+    @hasMany(() => Message)
+    declare message: HasMany<typeof Message>;
 }
