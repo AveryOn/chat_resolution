@@ -158,6 +158,8 @@ export default class ChatsController {
                     ...rest
                 };
             });
+            console.log(chats);
+            
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true), paginator },
                 data: chats,
