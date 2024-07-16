@@ -78,7 +78,7 @@ export default class ChatsController {
             }
 
             // Получение списка чатов
-            let chats: Array<Chat>;
+            let chats: Array<Chat | any>;
             // Если пагинатор определен то получаем список сущностей по пагинации
             if (paginator) {
                 function compOffset() {
@@ -94,6 +94,9 @@ export default class ChatsController {
                             chatsQuery
                                 .select(['id', 'creator', 'created_at'])
                                 .whereNull('chats.deleted_at')
+                                .preload('message', (messageBuilder) => {
+                                    messageBuilder.select('content').orderBy('created_at', 'desc').first();
+                                })
                                 .preload('users', (usersQuery) => {
                                     usersQuery
                                         .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
@@ -124,6 +127,10 @@ export default class ChatsController {
                             chatsQuery
                                 .select(['id', 'creator', 'created_at'])
                                 .whereNull('chats.deleted_at')
+                                // Извлечение последнего сообщения этого чата
+                                .preload('message', (messageBuilder) => {
+                                    messageBuilder.select('content').orderBy('created_at', 'desc').first();
+                                })
                                 .preload('users', (usersQuery) => {
                                     usersQuery
                                         .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
@@ -142,6 +149,15 @@ export default class ChatsController {
                     }
                 }
             }
+            // изменения ключа message на preview_message для каждого чата
+            chats = chats.map((chat) => {
+                chat = chat.toJSON()
+                const { message, ...rest } = chat;
+                return {
+                    preview_message: message[0]?.content ?? null,
+                    ...rest
+                };
+            });
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true), paginator },
                 data: chats,
