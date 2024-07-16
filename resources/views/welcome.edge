@@ -563,6 +563,39 @@
                 })
                 @end
 
+                {{-- GET USER OWNER DATA --}}
+                @requestRow({
+                    method: 'GET',
+                    title: 'Get user owner data',
+                    requiredAuth: true,
+                    descr: `
+                        Запросить собственные данные пользователя по токену доступа. 
+                        ** Примечание: ID пользователя и ID профиля могут различаться, но для 
+                            взаимодействия пользователя с чатом, необходимо использовать ID пользователя а не ID профиля
+                        `,
+                    url: '/users/me',
+                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
+                    pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
+                    responseExample: `
+                        {
+                            "meta": {
+                                "status": "success",
+                                "code": 200,
+                                "url": "/users/me"
+                            },
+                            "data": {
+                                "id": number,
+                                "name": string,
+                                "lastname": string,
+                                "surname": string | null,
+                                "email": string,
+                                "createdAt": string,
+                            }
+                        }
+                    `
+                })
+                @end
+
                 {{-- CREATE USER --}}
                 @requestRow({
                     method: 'POST',
@@ -731,6 +764,7 @@
                             },
                             "data": [
                                 {
+                                    "preview_message": string | null,
                                     "id": number,
                                     "creator": number,
                                     "createdAt": string,

@@ -69,6 +69,25 @@ export default class UsersController {
         }
     }
 
+    // Получить собственные даннные пользователя 
+    async getUserDataMe({ request, response, auth }: HttpContext) {
+        try {
+            const { id }: User = await auth.authenticate();
+            const user = await User.query().select(['id', 'name', 'lastname', 'surname', 'email', 'created_at']).where('id', id).firstOrFail();
+            // Формируем ответ для клиента
+            response.send({
+                meta: { status: 'success', code: 200, url: request.url(true) },
+                data: user.toJSON(),
+            });
+        } catch (err) {
+            console.error(`users_controller: getUserDataMe  => ${err}`);
+            response.abort({
+                meta: { status: 'error', code: 400, url: request.url(true) },
+                data: err.messages ?? 'Bad request',
+            })
+        }
+    }
+
     // Получение пользователя по ID
     async getUserById({ request, response, auth }: HttpContext) {
         const trx = await db.transaction();
