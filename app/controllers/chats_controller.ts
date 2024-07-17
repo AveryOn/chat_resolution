@@ -94,14 +94,14 @@ export default class ChatsController {
                             chatsQuery
                                 .select(['id', 'creator', 'created_at'])
                                 .whereNull('chats.deleted_at')
-                                .preload('message', (messageBuilder) => {
-                                    messageBuilder.select('content').orderBy('created_at', 'desc').first();
-                                })
                                 .preload('users', (usersQuery) => {
                                     usersQuery
                                         .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
                                         .whereNull('users.deleted_at')
                                         .whereNot('users.id', user.id)
+                                })
+                                .preload('message', (messageBuilder) => {
+                                    messageBuilder.select('content').groupLimit(1);
                                 })
                                 .offset(compOffset())
                                 .limit(paginator.perPage);
@@ -117,7 +117,9 @@ export default class ChatsController {
                         data: 'Не удалось получить чаты [with pagination]',
                     }
                 }
-            } else {
+            } 
+            // Если пагинатор НЕ определен
+            else {
                 const userTrx = await db.transaction();
                 try {
                     // Получить пользователя по ID и загрузить его чаты вместе с пользователями этих чатов
@@ -128,20 +130,21 @@ export default class ChatsController {
                                 .select(['id', 'creator', 'created_at'])
                                 .whereNull('chats.deleted_at')
                                 // Извлечение последнего сообщения этого чата
-                                .preload('message', (messageBuilder) => {
-                                    messageBuilder.select('content').orderBy('created_at', 'desc').first();
-                                })
                                 .preload('users', (usersQuery) => {
                                     usersQuery
                                         .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
                                         .whereNull('users.deleted_at')
                                         .whereNot('users.id', user.id)
-                                });
+                                })
+                                .preload('message', (messageBuilder) => {
+                                    messageBuilder.select('content').groupLimit(1);
+                                })
                         })
                         .firstOrFail();
                     chats = fecthedUser.chats;
                     await userTrx.commit();
                 } catch (err) {
+                    console.error(err)
                     await userTrx.rollback();
                     throw {
                         meta: { status: 'error', code: 400, url: request.url(true) },
@@ -158,8 +161,6 @@ export default class ChatsController {
                     ...rest
                 };
             });
-            console.log(chats);
-            
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true), paginator },
                 data: chats,

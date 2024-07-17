@@ -24,7 +24,6 @@ import {
 import { ModelObject } from '@adonisjs/lucid/types/model';
 import { messageDeleteEmit, messageNewEmit, messageUpdateEmit } from '#socket/emits/message_emits';
 import UserChats from '#models/users_chat';
-import { log } from 'console';
 
 export default class MessagesController {
 
