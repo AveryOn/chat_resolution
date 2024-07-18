@@ -157,7 +157,7 @@ export default class ChatsController {
                 chat = chat.toJSON()
                 const { message, ...rest } = chat;
                 return {
-                    preview_message: message[0]?.content ?? null,
+                    previewMessage: message[0]?.content ?? null,
                     ...rest
                 };
             });
