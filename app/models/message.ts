@@ -25,6 +25,9 @@ export default class Message extends BaseModel {
     @column()
     declare isForwarding: boolean;
 
+    @column()
+    declare edited: boolean;
+
     @column.dateTime({ autoCreate: true })
     declare createdAt: DateTime;
 

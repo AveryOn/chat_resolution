@@ -154,6 +154,7 @@ export default class MessagesController {
             // Создание нового экземпляра сообщения
             const message: Message | Message & { forwardedMessages: Array<Message> } = new Message();
             message.content = validData!.content;
+            message.edited = false;
             if (validData!.forwarding === true && validData!.chat_id !== null) {
                 message.isForwarding = true;
             }
@@ -268,6 +269,7 @@ export default class MessagesController {
             try {
                 message = await Message.findOrFail(validData!.id, { client: trx });
                 message.content = validData!.content;
+                message.edited = true;
                 await message.save();
             } catch (err) {
                 if (err?.messages) throw {
