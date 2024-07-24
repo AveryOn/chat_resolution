@@ -101,7 +101,7 @@ export default class ChatsController {
                                         .whereNot('users.id', user.id)
                                 })
                                 .preload('message', (messageBuilder) => {
-                                    messageBuilder.select('content').groupLimit(1);
+                                    messageBuilder.select(['content', 'id', 'created_at', 'edited']).groupLimit(1);
                                 })
                                 .offset(compOffset())
                                 .limit(paginator.perPage);
@@ -137,7 +137,7 @@ export default class ChatsController {
                                         .whereNot('users.id', user.id)
                                 })
                                 .preload('message', (messageBuilder) => {
-                                    messageBuilder.select('content').groupLimit(1);
+                                    messageBuilder.select(['content', 'id', 'created_at', 'edited']).groupLimit(1);
                                 })
                         })
                         .firstOrFail();
@@ -156,8 +156,14 @@ export default class ChatsController {
             chats = chats.map((chat) => {
                 chat = chat.toJSON()
                 const { message, ...rest } = chat;
+                console.log(message[0]);
                 return {
-                    previewMessage: message[0]?.content ?? null,
+                    previewMessage: {
+                        id: message[0]?.id ?? null,
+                        content: message[0]?.content ?? null,
+                        edited: message[0]?.edited ?? null,
+                        createdAt: message[0]?.createdAt ?? null,
+                    },
                     ...rest
                 };
             });

@@ -100,7 +100,7 @@ export default class MessagesController {
             // Инициализация пагинатора
             let paginator: MessagesPaginator | null = null;
             if (validParams?.page && validParams?.per_page) {
-                paginator = await initMessagesPaginator(validParams.page, validParams.per_page);
+                paginator = await initMessagesPaginator(validParams.chat_id, validParams.page, validParams.per_page);
             }
             // Аутентификация
             await auth.authenticate();
@@ -125,7 +125,6 @@ export default class MessagesController {
             response.abort(err, err?.meta?.code ?? 500);
         }
     }
-
 
     // Создание нового сообщения
     async store({ request, response, auth }: HttpContext) {

@@ -34,14 +34,20 @@ export default class UsersController {
             // Если объект пагинатора определен, то получаем пользователей согласно правилам пагинации
             if (paginator) {
                 function compOffset() {
-                    if (paginator) return (paginator.currentPage - 1) * paginator.perPage;
+                    
+                    if (paginator) {
+                        paginator.total = paginator?.total - 1;
+                        return (paginator.currentPage - 1) * paginator.perPage;
+                    }
                     else return 0;
                 }
-
                 users = await User
                     .query({ client: trx })
                     .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
                     .whereNot('id', user.id)
+                    .andWhereRaw('LOWER(name) LIKE ?', [`%${params.fullname?.toLowerCase()}%`])
+                    .orWhereRaw('LOWER(lastname) LIKE ?', [`%${params.fullname?.toLowerCase()}%`])
+                    .orWhereRaw('LOWER(surname) LIKE ?', [`%${params.fullname?.toLowerCase()}%`])
                     .offset(compOffset())
                     .limit(paginator.perPage);
             }
@@ -51,6 +57,9 @@ export default class UsersController {
                     .query({ client: trx })
                     .select(['id', 'name', 'lastname', 'surname', 'last_activity', 'created_at'])
                     .whereNot('id', user.id)
+                    .andWhereLike('name', `%${params.fullname}%`)
+                    .orWhereLike('lastname', `%${params.fullname}%`)
+                    .orWhereLike('surname', `%${params.fullname}%`)
             }
 
             // Формируем ответ для клиента

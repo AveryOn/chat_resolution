@@ -119,9 +119,20 @@ export async function uploadRucursiveForwardedMessages(messages: Array<Message>)
 
 // Базовая функция для получения сообщений C ПАГИНАТОРОМ
 export async function fetchMessagesBasicWithPaginator(chatId: number, paginator: MessagesPaginator) {
-    function compOffset() {
-        if (paginator) return (paginator.currentPage - 1) * paginator.perPage;
-        else return 0;
+    function compOffsetNLimit() {
+        if (paginator) {
+            // Вычисление Offset-смещения
+            let readyOffset = paginator.total - (paginator.currentPage * paginator.perPage);
+            let limit = paginator.perPage;
+            if(readyOffset < 0) {
+                console.log(readyOffset);
+                // Вычисление лимита
+                limit = paginator.perPage - Math.abs(readyOffset);
+                readyOffset = 0;
+            }
+            return {offset: readyOffset, limit};
+        }
+        else return {offset: 0, limit: 0};
     }
     const trx = await db.transaction();
     try {
@@ -130,8 +141,8 @@ export async function fetchMessagesBasicWithPaginator(chatId: number, paginator:
             .select(['*'])
             .where('chat_id', chatId)
             .whereNull('deleted_at')
-            .offset(compOffset())
-            .limit(paginator.perPage)
+            .offset(compOffsetNLimit().offset)
+            .limit(compOffsetNLimit().limit)
             .orderBy('created_at', 'asc');
         await trx.commit();
         return await uploadRucursiveForwardedMessages(messages);
@@ -155,6 +166,7 @@ export async function fetchMessagesBasicWithoutPaginator(chatId: number) {
             .select(['*'])
             .where('chat_id', chatId)
             .whereNull('deleted_at')
+            .orderBy('created_at', 'asc')
             .preload('forwardedMessagesId', (queryBuilder) => {
                 queryBuilder
                     .select(['forwarded_message_id'])

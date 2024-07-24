@@ -51,7 +51,7 @@ export async function initUserPaginator(page: number | string, perPage: number |
     return paginator;
 }
 
-export async function initMessagesPaginator(page: number | string, perPage: number | string): Promise<MessagesPaginator> {
+export async function initMessagesPaginator(chatId: number, page: number | string, perPage: number | string): Promise<MessagesPaginator> {
     let paginator;
     let total;
     let currentPage;
@@ -63,8 +63,9 @@ export async function initMessagesPaginator(page: number | string, perPage: numb
 
     // Вычисление значений для пагинатора
     try {
-        const totalCount = await Message.query().count('* as total');
+        const totalCount = await Message.query().where('chat_id', chatId).count('* as total');
         total = totalCount[0].$extras.total;
+        
         if(total) total = +total;
     } catch (err) {
         console.error(`utils/meta_utils: initMessagesPaginator [totalCount]  => ${err}`);

@@ -30,6 +30,7 @@ export const validBodyUserPut = vine.compile(vine.object({
 export const validParamsUsersGet = vine.compile(vine.object({
     page: vine.number().positive().optional(),
     per_page: vine.number().positive().optional(),
+    fullname: vine.string().trim().optional(),
 }));
 
 export const validPathParamsUserGet = vine.compile(vine.object({

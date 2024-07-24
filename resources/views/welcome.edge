@@ -504,7 +504,12 @@
                         ** Примечание: пользователи чьё поле deletedAt НЕ РАВНО null, будут исключены из ответа
                         `,
                     url: '/users',
-                    queries: [{ key: 'page', type: 'number', required: false, default: '-' },{ key: 'per_page', type: 'number', required: false, default: '-' },],
+                    queries: [
+                        { key: 'page', type: 'number', required: false, default: '-' },
+                        { key: 'per_page', type: 'number', required: false, default: '-' },
+                        { key: 'fullname', type: 'string', required: false, default: '-' },
+                        { key: 'login', type: 'string', required: false, default: '-' },
+                    ],
                     pathParams: [ { key: '-', type: '-', required: '-', default: '-' } ],
                     responseExample: `
                         {
@@ -764,7 +769,11 @@
                             },
                             "data": [
                                 {
-                                    "previewMessage": string | null,
+                                    "previewMessage": {
+                                        "id": number | null,
+                                        "content": string | null,
+                                        "createdAt": string | null,
+                                    },
                                     "id": number,
                                     "creator": number,
                                     "createdAt": string,
