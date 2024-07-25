@@ -324,62 +324,76 @@ export default class MessagesController {
 
     // Удаление сообщения
     async deleteMessage({ request, response, auth }: HttpContext) {
-        const trx = await db.transaction();
+        
         try {
             // Аутентификация
             const user: User = await auth.authenticate();
+            let toUserId: number;
 
             // Получение параметров пути и их валидация
             let validParams;
             try {
-                const rawPathParams = request.params();
-                validParams = await validateMessageParamsDelete.validate(rawPathParams);
+                const rawQueryParams = request.qs();
+                validParams = await validateMessageParamsDelete.validate(rawQueryParams);
             } catch (err) {
                 if (err?.messages) throw {
                     meta: { status: 'error', code: err?.status ?? 422, url: request.url(true) },
                     data: { messages: err?.messages, preview: 'Проверьте корректность отправляемых данных' },
                 }
             }
-            let message: Message | null = await Message.find(validParams!.id);
-            if (!message) throw {
-                meta: { status: 'error', code: 404, url: request.url(true) },
-                data: { preview: 'Сообщения с таким ID не существует' },
-            }
 
-            if (message.deletedAt) throw {
-                meta: { status: 'error', code: 422, url: request.url(true) },
-                data: { preview: 'Сообщене с таким ID уже было удалено' },
-            }
-
-            if (user.id !== message.from_user_id) throw {
-                meta: { status: 'error', code: 403, url: request.url(true) },
-                data: { preview: 'Сообщение не принадлежит пользователю с таким ID' },
-            }
-
+            // Извлечение чата из БД для получения его сообщений по выборке
+            let chat: Chat;
             try {
-                const currentDate = DateTime.local()
-                message.deletedAt = currentDate;
-                // Если сообщение пересылает другие сообщения, то информация об этом тоже удаляется 
-                // if(message.isForwarding === true) {
-                //     await deleteRelationForwardingMessages(message.id, currentDate);
-                // }
-                await message.save();
+                chat = await Chat.findByOrFail('id', validParams!.chat_id);
             } catch (err) {
+                console.error(`messages_controller: deleteMessage  => Не удалось извлечь чат из базы данных =>`, err);
                 throw {
-                    meta: { status: 'error', code: 500, url: request.url(true) },
-                    data: { preview: 'Ошибка при удалении сообщения' },
+                    meta: { status: 'error', code: err?.status ?? 500, url: request.url(true) },
+                    data: { messages: err?.messages, preview: 'Не удалось извлечь чат из базы данных по его ID из параметров запроса' },
                 }
             }
-            await trx.commit();
-            const readyMessage = message.toJSON();
+
+            // Извлечение сообщений, которые необходимо удалить
+            let messages: Message[];
+            try {
+                messages = await chat
+                .related('message')
+                .query()
+                .select('*')
+                .whereNull('deleted_at')
+                .andWhereIn('id', validParams!.ids)
+                .andWhere('from_user_id', user!.id)
+            } catch (err) {
+                console.error(`messages_controller: deleteMessage  => Ошибка при извлечении сообщений через сущность чата =>`, err);
+                throw {
+                    meta: { status: 'error', code: err?.status ?? 500, url: request.url(true) },
+                    data: { messages: err?.messages, preview: 'Ошибка при чтении сообщений в Базе Данных по их ID из параметров запроса' },
+                }
+            }
+
+            // Установка поля deleted_at сообщениям, чтобы сделать их мягко удаленными 
+            messages.forEach((message) => {
+                if(!toUserId) toUserId = message.to_user_id;
+                message.deletedAt = DateTime.local();
+            });
+            // Сохранение изменений сообщений в Базе Данных
+            try {
+                await chat.related('message').saveMany(messages);
+            } catch (err) {
+                console.error(`messages_controller: deleteMessage  => Ошибка при сохранении изменений полей deletedAt у удаляемых сообщений =>`, err);
+                throw {
+                    meta: { status: 'error', code: err?.status ?? 500, url: request.url(true) },
+                    data: { messages: err?.messages, preview: 'Не удалось удалить выбранные сообщения' },
+                }
+            }
             // Уведомить собеседника об удалении этого сообщения
-            messageDeleteEmit(readyMessage);
+            messageDeleteEmit(validParams!.ids, toUserId!);
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: null,
             });
         } catch (err) {
-            await trx.rollback();
             console.error(`messages_controller: deleteMessage  => ${err.data.preview}`);
             response.abort(err, err?.meta?.code ?? 500);
         }

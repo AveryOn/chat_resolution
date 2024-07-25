@@ -28,10 +28,18 @@ export function messageUpdateEmit(message: ModelObject) {
     }
 }
 
-export function messageDeleteEmit(message: ModelObject) {
+export function messageDeleteEmit(messageIds: number[], toUserId: number | undefined) {
+    if(!messageIds.length) return;
     try {
-        const toUserSocketId: string = computeSocketId(message.toUserId);
-        io.to(toUserSocketId).emit('message:delete', message.id);
+        if(!toUserId) {
+            console.error(`Не удалось получить toUserId в качестве ID пользователя-получателя сокет-события. Событие <message:delete> отправлено не было`);
+            throw {
+                meta: { status: 'error', code: 422, url: '/messages/delete' },
+                data: { messages: [], preview: 'Не удалось удалить сообщения' },
+            }
+        }
+        const toUserSocketId: string = computeSocketId(toUserId);
+        io.to(toUserSocketId).emit('message:delete', messageIds);
     } catch (err) {
         console.error(`socket/emits/message_emits: messageDeleteEmit  => ${err}`)
         throw err;

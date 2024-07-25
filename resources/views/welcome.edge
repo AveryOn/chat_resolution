@@ -1143,25 +1143,29 @@
                 })
                 @end
 
-                {{-- DELETE MESSAGE --}}
+                {{-- DELETE MESSAGES --}}
                 @requestRow({
                     method: 'DELETE',
                     title: 'Delete message',
                     requiredAuth: true,
                     descr: `
-                    Запрос на удаление сообщение.
-                    ** Примечание: сообщение удаляется из системы <Мягко> **
+                    Запрос на удаление сообщений. Идентификаторы сообщений, которые необходимо удалить, передаются в виде массива чисел. 
+                    Также допустимо передавать один ID в массиве, если требуется удалить только одно сообщение
+                    ** Примечание: сообщения удаляются из системы <Мягко> **
                         `,
-                    url: 'messages/:id/delete',
-                    queries: [{ key: '-', type: '-', required: '-', default: '-' }],
-                    pathParams: [{ key: 'id', type: 'number', required: true, default: '-' }],
+                    url: 'messages/delete',
+                    queries: [
+                        { key: 'ids', type: 'Array<number>', required: true, default: '-' },
+                        { key: 'chat_id', type: 'number', required: true, default: '-' }        
+                    ],
+                    pathParams: [{ key: '-', type: '-', required: '-', default: '-' }],
                     requestExample: undefined,
                     responseExample: `
                         {
                             "meta": {
                                 "status": "success",
                                 "code": 200,
-                                "url": "/messages/:id/delete"
+                                "url": "/messages/delete"
                             },
                             "data": null
                         }

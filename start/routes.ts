@@ -51,11 +51,11 @@ router.group(() => {
 
 // MESSAGES ROUTES
 router.group(() => {
-    router.get('/message/:id', '#controllers/messages_controller.getMessageById').as('get-message-by-id');  // Get message BY id
-    router.get('/chat/:chat_id', '#controllers/messages_controller.getMessages').as('get-messages');        // Get messages BY chat ID
-    router.post('/create', '#controllers/messages_controller.store').as('create-message');                  // Create message
-    router.put('/:id/update', '#controllers/messages_controller.updateMessage').as('update-message');       // Update message
-    router.delete('/:id/delete', '#controllers/messages_controller.deleteMessage').as('delete-message');    //  Delete message
+    router.get('/message/:id', '#controllers/messages_controller.getMessageById').as('get-message-by-id');            // Get message BY id
+    router.get('/chat/:chat_id', '#controllers/messages_controller.getMessages').as('get-messages');                  // Get messages BY chat ID
+    router.post('/create', '#controllers/messages_controller.store').as('create-message');                            // Create message
+    router.put('/:id/update', '#controllers/messages_controller.updateMessage').as('update-message');                 // Update message
+    router.delete('/delete', '#controllers/messages_controller.deleteMessage').as('delete-message');    //  Delete message
 }).prefix('messages');
 
 

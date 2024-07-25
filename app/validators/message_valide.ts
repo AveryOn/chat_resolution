@@ -15,7 +15,8 @@ export const validateMessageBodyPut = vine.compile(vine.object({
 }));
 
 export const validateMessageParamsDelete = vine.compile(vine.object({
-    id: vine.number().positive().min(1),
+    ids: vine.array(vine.number().positive()),
+    chat_id: vine.number().positive().min(1),
 }));
 
 export const validateMessageParamsGet = vine.compile(vine.object({

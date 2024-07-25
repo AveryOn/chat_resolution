@@ -21,6 +21,7 @@ export function SocketAuthMiddleware(socket: Socket, next: (err?: ExtendedError 
         } else {
             return next(new Error('Ошибка аутентификации'));
         }
+        
     } catch (err) {
         console.error(`socket/middleware: SocketAuthMiddleware => ${err}`);
     }
