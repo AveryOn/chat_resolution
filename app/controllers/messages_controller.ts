@@ -86,6 +86,9 @@ export default class MessagesController {
     async getMessages({ request, response, auth }: HttpContext) {
         const trx = await db.transaction();
         try {
+            // Аутентификация
+            await auth.authenticate();
+
             // Получние параметров запроса и их валидация
             const params = request.params();
             let validParams;
@@ -102,8 +105,6 @@ export default class MessagesController {
             if (validParams?.page && validParams?.per_page) {
                 paginator = await initMessagesPaginator(validParams.chat_id, validParams.page, validParams.per_page);
             }
-            // Аутентификация
-            await auth.authenticate();
 
             let messages: Array<ModelObject> | undefined;
             // Если объект пагинатора определен, то получаем сообщения согласно правилам пагинации
@@ -341,7 +342,6 @@ export default class MessagesController {
                     data: { messages: err?.messages, preview: 'Проверьте корректность отправляемых данных' },
                 }
             }
-
             // Извлечение чата из БД для получения его сообщений по выборке
             let chat: Chat;
             try {
@@ -387,11 +387,39 @@ export default class MessagesController {
                     data: { messages: err?.messages, preview: 'Не удалось удалить выбранные сообщения' },
                 }
             }
+
+            // Извлечение последнего сообщения в чате
+            let lastMessage: Message[] | Message;
+            let readyLastMessage;
+            try {
+                lastMessage = await chat
+                    .related('message')
+                    .query()
+                    .select(['content', 'id', 'created_at', 'edited'])
+                    .whereNull('deleted_at')
+                    .orderBy('created_at', 'desc')
+                    .groupLimit(1);
+                if(Array.isArray(lastMessage) && lastMessage.length > 0) lastMessage = lastMessage[0];
+                if(lastMessage instanceof Message) {
+                    readyLastMessage = {
+                        content: lastMessage.content,
+                        id: lastMessage.id,
+                        createdAt: lastMessage.createdAt.toJSON(),
+                        edited: lastMessage.edited,
+                    }
+                }
+            } catch (err) {
+                console.error(`messages_controller: deleteMessage  => Ошибка при извлечении последнего сообщения чата =>`, err);
+                throw {
+                    meta: { status: 'error', code: err?.status ?? 500, url: request.url(true) },
+                    data: { messages: err?.messages, preview: 'Не удалось удалить выбранные сообщения' },
+                }
+            }
             // Уведомить собеседника об удалении этого сообщения
             messageDeleteEmit(validParams!.ids, toUserId!);
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
-                data: null,
+                data: { lastMessage: readyLastMessage ?? null },
             });
         } catch (err) {
             console.error(`messages_controller: deleteMessage  => ${err.data.preview}`);

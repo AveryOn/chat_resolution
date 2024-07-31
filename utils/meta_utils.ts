@@ -63,7 +63,11 @@ export async function initMessagesPaginator(chatId: number, page: number | strin
 
     // Вычисление значений для пагинатора
     try {
-        const totalCount = await Message.query().where('chat_id', chatId).count('* as total');
+        const totalCount = await Message
+            .query()
+            .where('chat_id', chatId)
+            .andWhereNull('deleted_at')
+            .count('* as total');
         total = totalCount[0].$extras.total;
         
         if(total) total = +total;

@@ -100,8 +100,12 @@ export default class ChatsController {
                                         .whereNull('users.deleted_at')
                                         .whereNot('users.id', user.id)
                                 })
+                                // Извлечение последнего сообщения для preview_message поля
                                 .preload('message', (messageBuilder) => {
-                                    messageBuilder.select(['content', 'id', 'created_at', 'edited']).groupLimit(1);
+                                    messageBuilder
+                                        .select(['content', 'id', 'created_at', 'edited'])
+                                        .whereNull('deleted_at')
+                                        .groupLimit(1);
                                 })
                                 .offset(compOffset())
                                 .limit(paginator.perPage);
@@ -136,8 +140,12 @@ export default class ChatsController {
                                         .whereNull('users.deleted_at')
                                         .whereNot('users.id', user.id)
                                 })
+                                // Извлечение последнего сообщения для preview_message поля
                                 .preload('message', (messageBuilder) => {
-                                    messageBuilder.select(['content', 'id', 'created_at', 'edited']).groupLimit(1);
+                                    messageBuilder
+                                        .select(['content', 'id', 'created_at', 'edited'])
+                                        .whereNull('deleted_at')
+                                        .groupLimit(1);
                                 })
                         })
                         .firstOrFail();
@@ -156,7 +164,6 @@ export default class ChatsController {
             chats = chats.map((chat) => {
                 chat = chat.toJSON()
                 const { message, ...rest } = chat;
-                console.log(message[0]);
                 return {
                     previewMessage: {
                         id: message[0]?.id ?? null,
