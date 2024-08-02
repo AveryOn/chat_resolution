@@ -4,6 +4,7 @@ import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations';
 import User from '#models/user';
 import Chat from '#models/chat';
 import MessagesForwading from '#models/messages_forwading';
+import RepliedMessages from '#models/replied_message';
 
 
 export default class Message extends BaseModel {
@@ -28,6 +29,9 @@ export default class Message extends BaseModel {
     @column()
     declare edited: boolean;
 
+    @column()
+    declare replied: boolean;
+
     @column.dateTime({ autoCreate: true })
     declare createdAt: DateTime;
 
@@ -49,4 +53,7 @@ export default class Message extends BaseModel {
 
     @hasMany(() => MessagesForwading, { foreignKey: 'main_message_id' })
     declare forwardedMessagesId: HasMany<typeof MessagesForwading>;
+
+    @hasMany(() => RepliedMessages, { foreignKey: 'main_message_id' })
+    declare repliedInfoRow: HasMany<typeof RepliedMessages>;
 }

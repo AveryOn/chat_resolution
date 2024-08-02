@@ -51,10 +51,10 @@ export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>
         const messages = await Message
             .query()
             .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
-            .preload('fromUser', (querFrom) => querFrom.select(['id', 'name', 'lastname', 'surname']))
+            .preload('fromUser', (queryFrom) => queryFrom.select(['id', 'name', 'lastname', 'surname']))
             .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']))
             .whereIn('id', forwardedMessagesIds)
-        return uploadRucursiveForwardedMessages(messages);
+        return uploadRecursiveForwardedMessages(messages);
     } catch (err) {
         console.log(err);
         console.error('Не удалось извлечь сообщения по записям сопоставления');
@@ -65,41 +65,67 @@ export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>
     }
 }
 
+// Функция извлекает связанное сообщение у reply-сообщения (Если оно есть), иначе возвращает JSON этого сообщения 
+export async function fetchRelatedMessage(message: Message, readyMessage: ModelObject) {
+    if (message.replied === true) {
+        try {
+            await message.load('repliedInfoRow', (infoBuilder) => {
+                infoBuilder.preload('relatedMessage', (relatedMsgBuilder) => {
+                    relatedMsgBuilder
+                        .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'created_at', 'updated_at', 'is_forwarding',])
+                        .where('chat_id', message.chatId);
+                });
+            });
+            if (message.repliedInfoRow && message.repliedInfoRow.length) {
+                readyMessage.relatedMessage = message.repliedInfoRow[0].relatedMessage;
+            }
+        } catch (err) {
+            console.error('utils/messages_utils: fetchRelatedMessage => ', err);
+            throw err;
+        }
+    } else readyMessage.relatedMessage = null;
+    return readyMessage;
+}
 
 // Функция рекурсивно запрашивает вложенные (пересылаемые) сообщения и собирает массив сообщений
 // Где у каждого сообщения есть ключ forwardedMessages который содержит вложенные сообщения
-export async function uploadRucursiveForwardedMessages(messages: Array<Message>) {
-    const trx = await db.transaction();
+export async function uploadRecursiveForwardedMessages(messages: Array<Message>) {
     try {
         // рекурсия
-        async function transformMessages(message: Message) {
+        async function transformMessages(message: Message): Promise<ModelObject> {
             let readyMessage: ModelObject = message.toJSON();
+            delete readyMessage!.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
             if (message.isForwarding === false) {
-                delete readyMessage!.forwardedMessagesId;
-                return readyMessage!;
+                return await fetchRelatedMessage(message, readyMessage);
             }
             // Если список вложенных сообщений есть то выполняем рекурсивный проход по нему
             if (message.forwardedMessagesId && message.forwardedMessagesId.length > 0) {
                 readyMessage!.forwardedMessages = []
-
                 let inner = message.forwardedMessagesId.map(async (entry) => {
                     return await transformMessages(entry.forwardedMessage);
                 });
-                delete readyMessage!.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
                 readyMessage!.forwardedMessages = await Promise.all(inner); // ожидание полезных данных в ответе БД
             }
             // Если массива с вложенными сообщениями нет, но есть об этом информация (т.е поле isForwading=true)
             // То выполняется запрос на получение вложенных сообщений с БД
             else {
-                await message.load('forwardedMessagesId', (queryMain) => {
-                    queryMain.preload('forwardedMessage', (queryMessage) => {
-                        queryMessage
-                            .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
-                            .preload('fromUser', (querFrom) => querFrom.select(['id', 'name', 'lastname', 'surname']))
-                            .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']))
+                const trx = await db.transaction();
+                try {
+                    await message.load('forwardedMessagesId', (queryMain) => {
+                        queryMain.preload('forwardedMessage', (queryMessage) => {
+                            queryMessage
+                                .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
+                                .preload('fromUser', (querFrom) => querFrom.select(['id', 'name', 'lastname', 'surname']))
+                                .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']))
+                        })
                     });
-                });
-                return await transformMessages(message);
+                    trx.commit();
+                    return await transformMessages(message);
+                } catch (err) {
+                    await trx.rollback();
+                    console.error('Ошибка извлечении forwardedMessages => utils/messages_utils:  uploadRecursiveForwardedMessages', err);
+                    throw err;
+                }
             }
             return readyMessage!;
         }
@@ -108,12 +134,10 @@ export async function uploadRucursiveForwardedMessages(messages: Array<Message>)
             return await transformMessages(message);
         });
         result = await Promise.all(result);
-        await trx.commit();
         return result;
     } catch (err) {
-        console.log(err);
-        await trx.rollback();
-        console.error('Ошибка при переборе => utils/messages_utils: excludeExcessForMessages');
+        console.error('Ошибка при переборе => utils/messages_utils: uploadRecursiveForwardedMessages', err);
+        throw err;
     }
 }
 
@@ -145,7 +169,7 @@ export async function fetchMessagesBasicWithPaginator(chatId: number, paginator:
             .limit(compOffsetNLimit().limit)
             .orderBy('created_at', 'asc');
         await trx.commit();
-        return await uploadRucursiveForwardedMessages(messages);
+        return await uploadRecursiveForwardedMessages(messages);
     } catch (err) {
         console.log(err);
         console.error('Не удалось выполнить запрос на получение сообщений => utils/messages_utils: fetchMessagesBasicWithPaginator');
@@ -182,7 +206,14 @@ export async function fetchMessagesBasicWithoutPaginator(chatId: number) {
                                     .select(['id', 'name', 'lastname', 'surname'])
                             })
                     })
-            });
+            })
+            .preload('repliedInfoRow', (infoBuilder) => {
+                infoBuilder.preload('relatedMessage', (relatedMsgBuilder) => {
+                    relatedMsgBuilder
+                        .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'created_at', 'updated_at', 'is_forwarding'])
+                        .where('chat_id', chatId);
+                });
+            })
         await trx.commit();
         messages.forEach((mes) => {
             console.log(mes.toJSON()?.forwardedMessagesId);

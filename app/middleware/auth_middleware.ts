@@ -12,7 +12,7 @@ export default class AuthMiddleware {
    */
   redirectTo = '/login'
 
-  async handle(
+  async handle( 
     ctx: HttpContext,
     next: NextFn,
     options: {

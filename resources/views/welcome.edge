@@ -1048,10 +1048,16 @@
                 @requestRow({
                     method: 'POST',
                     title: 'Creation message',
-                    descr: `Запрос на создание сообщения`,
+                    descr: `
+                        Запрос на создание сообщения. С помощью данного запроса можно создать стандартные сообщения, пересылающие сообщения и reply-сообщения.
+                        !! Важно: создаваемое сообщение не может быть одновременно и пересылающим и reply
+                    `,
                     requiredAuth: true,
                     url: 'messages/create',
-                    queries: [{ key: 'forwarding', type: 'boolean', required: false, default: '-' }],
+                    queries: [
+                        { key: 'forwarding', type: 'boolean', required: false, default: '-' },
+                        { key: 'replied', type: 'boolean', required: false, default: '-' },
+                    ],
                     pathParams: [{ key: '-', type: '-', required: '-', default: '-' }],
                     requestExample: `
                         {
@@ -1060,6 +1066,7 @@
                             chat_id: number | null *,
                             content: string *,
                             forwarded_ids: number[] ?,
+                            replied_at: number ?,
                         }
                     `,
                     responseExample: `
@@ -1086,9 +1093,19 @@
                                     "deletedAt": string | null
                                 },
                                 "isForwarding": boolean,
-                                "forwardedMessages": null | []
+                                "forwardedMessages": null | [],
+                                "relatedMessage": {
+                                    "id": number,
+                                    "fromUserId": number,
+                                    "toUserId": number,
+                                    "chatId": number,
+                                    "content": string,
+                                    "createdAt": string,
+                                    "updatedAt": string,
+                                    "isForwarding": boolean
+                                },
                                 "createdAt": string,
-                                "updatedAt": string | null,
+                                "updatedAt": string | null
                             }
                         }
                     `
