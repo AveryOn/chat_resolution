@@ -56,6 +56,6 @@ router.group(() => {
     router.post('/create', '#controllers/messages_controller.store').as('create-message');                            // Create message
     router.put('/:id/update', '#controllers/messages_controller.updateMessage').as('update-message');                 // Update message
     router.delete('/delete', '#controllers/messages_controller.deleteMessage').as('delete-message');    //  Delete message
-}).prefix('messages');
+}).prefix('messages')
 
 

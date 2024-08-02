@@ -6,7 +6,9 @@ export const validateMessageBodyCreation = vine.compile(vine.object({
     chat_id: vine.number().positive().nullable(),
     content: vine.string(),
     forwarded_ids: vine.array(vine.number().positive().min(1)).minLength(1).maxLength(10).optional(),
+    replied_at: vine.number().positive().min(1).optional(),
     forwarding: vine.boolean().optional(), // query
+    replied: vine.boolean().optional(),    // query
 }));
 
 export const validateMessageBodyPut = vine.compile(vine.object({

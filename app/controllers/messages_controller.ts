@@ -19,7 +19,7 @@ import {
     fetchForwardedMessages,
     fetchMessagesBasicWithPaginator,
     fetchMessagesBasicWithoutPaginator,
-    uploadRucursiveForwardedMessages
+    uploadRecursiveForwardedMessages
 } from '#utils/messages_utils';
 import { ModelObject } from '@adonisjs/lucid/types/model';
 import { messageDeleteEmit, messageNewEmit, messageUpdateEmit } from '#socket/emits/message_emits';
@@ -60,7 +60,7 @@ export default class MessagesController {
             // Если запрашиваемое сообщение является пересылающим другие сообщения то получаем их
             try {
                 if (message.isForwarding === true) {
-                    const messageFull = await uploadRucursiveForwardedMessages([message]);
+                    const messageFull = await uploadRecursiveForwardedMessages([message]);
                     if (messageFull) readyMessage = messageFull[0];
                 }
             } catch (err) {
@@ -136,7 +136,7 @@ export default class MessagesController {
             // Получение данных запроса и их валидация
             let validData;
             try {
-                const rawData = request.only(['from_user_id', 'to_user_id', 'chat_id', 'content', 'forwarded_ids']);
+                const rawData = request.only(['from_user_id', 'to_user_id', 'chat_id', 'content', 'forwarded_ids', 'replied_at']);
                 const rawQueries = request.qs();
                 validData = await validateMessageBodyCreation.validate({ ...rawData, ...rawQueries });
             } catch (err) {
@@ -155,6 +155,7 @@ export default class MessagesController {
             const message: Message | Message & { forwardedMessages: Array<Message> } = new Message();
             message.content = validData!.content;
             message.edited = false;
+            message.replied = false;
             if (validData!.forwarding === true && validData!.chat_id !== null) {
                 message.isForwarding = true;
             }
@@ -173,7 +174,6 @@ export default class MessagesController {
                         .groupBy('chat_id')
                         .havingRaw('COUNT(DISTINCT user_id) = 2') // Убедится, что оба пользователя связаны с тем же чатом
                         .first())?.toJSON();
-
                     if(!data) {
                         chat = await Chat.create({
                             creator: validData!.from_user_id,
@@ -218,26 +218,65 @@ export default class MessagesController {
             // Если создаваемое сообщение является пересылающим другие сообщения
             // (Создать пересылаемое сообщение можно только в существующем чате)
             let forwardedMessages: Array<ModelObject> | undefined;
-            try {
-                if (validData!.forwarding === true && validData!.chat_id && validData!.forwarded_ids) {
+            if (validData!.replied === false && validData!.forwarding === true && validData!.chat_id && validData!.forwarded_ids) {
+                try {
                     await createForwardingsRows(message, validData!.forwarded_ids);
                     forwardedMessages = await fetchForwardedMessages(validData!.forwarded_ids);
+    
+                } catch (err) {
+                    console.error(`messages_controller: store[forwading msg]  => `, err);
+                    throw {
+                        meta: { status: 'error', code: err.status ?? 500, url: request.url(true) },
+                        data: err,
+                    }
                 }
-            } catch (err) {
-                throw {
-                    meta: { status: 'error', code: err.status ?? 500, url: request.url(true) },
-                    data: err,
+            }
+            // Если создаваемое сообщение является reply-сообщением на другое
+            let forwardedMessagesReplied: any[] = [];
+            if(validData!.forwarding === false && validData?.replied === true && validData.replied_at && validData.chat_id) {
+                try {
+                    message.replied = true;
+                    await message.related('repliedInfoRow').create({ main_message_id: message.id, replied_message_id: validData.replied_at });
+                    await message.load('repliedInfoRow', (infoBuilder) => {
+                        infoBuilder.preload('relatedMessage', (relatedMsgBuilder) => {
+                            relatedMsgBuilder
+                                .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'created_at', 'updated_at', 'is_forwarding', ])
+                                .where('chat_id', message.chatId);
+                        });
+                    });
+                    // если у собщения на которое отвечает reply-сообщение есть массив пересланных сообщений, то их нужно извлечь
+                    if(message.repliedInfoRow[0].relatedMessage.isForwarding === true) {
+                        let result = await fetchForwardedMessages([validData.replied_at]);
+                        if(result && result.length) {
+                            forwardedMessagesReplied = result[0].forwardedMessages;
+                        }
+                    }
+                } catch (err) {
+                    console.error(`messages_controller: store[replied msg]  => `, err);
+                    throw {
+                        meta: { status: 'error', code: err.status ?? 500, url: request.url(true) },
+                        data: err,
+                    }
                 }
             }
             let readyMessage;
             readyMessage = message.toJSON();
+            if(message.repliedInfoRow && message.repliedInfoRow.length) {
+                Reflect.deleteProperty(readyMessage, 'repliedInfoRow');
+                readyMessage.relatedMessage = message.repliedInfoRow[0].relatedMessage.toJSON();
+                if(forwardedMessagesReplied.length) {
+                    readyMessage.relatedMessage.forwardedMessages = forwardedMessagesReplied;
+                }
+            } else {
+                readyMessage.relatedMessage = null;
+            }
             if (forwardedMessages!) {
                 readyMessage.forwardedMessages = forwardedMessages;
             }
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },
                 data: readyMessage,
-            })
+            });
             // Направление созданного сообщения собеседнику
             messageNewEmit(readyMessage, validData!.chat_id, (validData!.chat_id === null) ? readyMessage.chatId : undefined);
         } catch (err) {
@@ -300,7 +339,7 @@ export default class MessagesController {
             // Если редактируемое сообщение является пересылающим другие сообщения  то получаем их
             try {
                 if (message.isForwarding === true) {
-                    const messageFull = await uploadRucursiveForwardedMessages([message]);
+                    const messageFull = await uploadRecursiveForwardedMessages([message]);
                     if (messageFull) readyMessage = messageFull[0];
                 }
             } catch (err) {
