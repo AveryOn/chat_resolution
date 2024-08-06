@@ -94,6 +94,7 @@ export async function uploadRecursiveForwardedMessages(messages: Array<Message>)
         // рекурсия
         async function transformMessages(message: Message): Promise<ModelObject> {
             let readyMessage: ModelObject = message.toJSON();
+            
             delete readyMessage!.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
             if (message.isForwarding === false) {
                 return await fetchRelatedMessage(message, readyMessage);

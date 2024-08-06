@@ -216,9 +216,9 @@ export default class MessagesController {
             }
 
             // Если создаваемое сообщение является пересылающим другие сообщения
-            // (Создать пересылаемое сообщение можно только в существующем чате)
+            // (Создать пересылаемое сообщение можно толькоcle в существующем чате)
             let forwardedMessages: Array<ModelObject> | undefined;
-            if (validData!.replied === false && validData!.forwarding === true && validData!.chat_id && validData!.forwarded_ids) {
+            if (!validData!.replied && validData!.forwarding === true && validData!.chat_id && validData!.forwarded_ids) {
                 try {
                     await createForwardingsRows(message, validData!.forwarded_ids);
                     forwardedMessages = await fetchForwardedMessages(validData!.forwarded_ids);
@@ -233,7 +233,7 @@ export default class MessagesController {
             }
             // Если создаваемое сообщение является reply-сообщением на другое
             let forwardedMessagesReplied: any[] = [];
-            if(validData!.forwarding === false && validData?.replied === true && validData.replied_at && validData.chat_id) {
+            if(!validData!.forwarding && validData?.replied === true && validData.replied_at && validData.chat_id) {
                 try {
                     message.replied = true;
                     await message.related('repliedInfoRow').create({ main_message_id: message.id, replied_message_id: validData.replied_at });
