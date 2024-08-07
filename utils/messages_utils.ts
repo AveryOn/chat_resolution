@@ -53,7 +53,16 @@ export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>
             .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
             .preload('fromUser', (queryFrom) => queryFrom.select(['id', 'name', 'lastname', 'surname']))
             .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']))
+            // .preload('repliedInfoRow', (repliedInfo) => {
+            //     repliedInfo.preload('relatedMessage', (relatedMsgBuilder) => {
+            //         relatedMsgBuilder.select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'created_at', 'updated_at', 'is_forwarding']);
+            //         relatedMsgBuilder.preload('forwardedMessagesId', (forwardedInfo) => {
+            //             forwardedInfo.count('* as total_forwarded');
+            //         })
+            //     })
+            // })
             .whereIn('id', forwardedMessagesIds)
+            
         return uploadRecursiveForwardedMessages(messages);
     } catch (err) {
         console.log(err);
@@ -67,7 +76,7 @@ export async function fetchForwardedMessages(forwardedMessagesIds: Array<number>
 
 // Функция извлекает связанное сообщение у reply-сообщения (Если оно есть), иначе возвращает JSON этого сообщения 
 export async function fetchRelatedMessage(message: Message, readyMessage: ModelObject) {
-    if (message.replied === true) {
+    {
         try {
             await message.load('repliedInfoRow', (infoBuilder) => {
                 infoBuilder.preload('relatedMessage', (relatedMsgBuilder) => {
@@ -77,13 +86,36 @@ export async function fetchRelatedMessage(message: Message, readyMessage: ModelO
                 });
             });
             if (message.repliedInfoRow && message.repliedInfoRow.length) {
-                readyMessage.relatedMessage = message.repliedInfoRow[0].relatedMessage;
+                // message.repliedInfoRow[0].relatedMessage
+                readyMessage.relatedMessage = message.repliedInfoRow[0].relatedMessage.toJSON();
+                readyMessage.replied = true;
+            } else {
+                readyMessage.relatedMessage = null;
+                readyMessage.replied = false;
             }
+            if(message.repliedInfoRow && message.repliedInfoRow[0]?.relatedMessage) {
+                if(message.repliedInfoRow[0]?.relatedMessage?.isForwarding === true) {
+                    const relatedMessages: Message[] = await Message
+                        .query()
+                        .select('*')
+                        .where('id', message.repliedInfoRow[0]?.relatedMessage?.id)
+                        .preload('forwardedMessagesId', (builder) => {
+                            builder.select('forwarded_message_id');
+                        });
+                    if(relatedMessages[0].forwardedMessagesId && relatedMessages[0].forwardedMessagesId.length) {
+                        readyMessage.relatedMessage.forwardedMessagesCount = relatedMessages[0].forwardedMessagesId?.length;
+                    }
+                } else {
+                    readyMessage.relatedMessage.forwardedMessagesCount = null;
+                }
+            }
+            readyMessage.forwardedMessages = null;
+            readyMessage.isForwarding = false;
         } catch (err) {
             console.error('utils/messages_utils: fetchRelatedMessage => ', err);
             throw err;
         }
-    } else readyMessage.relatedMessage = null;
+    }
     return readyMessage;
 }
 
@@ -91,40 +123,63 @@ export async function fetchRelatedMessage(message: Message, readyMessage: ModelO
 // Где у каждого сообщения есть ключ forwardedMessages который содержит вложенные сообщения
 export async function uploadRecursiveForwardedMessages(messages: Array<Message>) {
     try {
+        // ДЛЯ ОТЛАДКИ РЕКУРСИИ
+        // let stateStack: { [key: number]: { value: null, count: number } } = {}
+        // function updateStack(messageId: number) {
+        //     if(messageId) {
+        //         if(!stateStack[messageId]) stateStack[messageId] = { count: 0, value: null };
+        //         else {
+        //             stateStack[messageId].count = ++stateStack[messageId].count;
+        //         }
+        //     }
+        // }
         // рекурсия
         async function transformMessages(message: Message): Promise<ModelObject> {
             let readyMessage: ModelObject = message.toJSON();
-            
-            delete readyMessage!.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
             if (message.isForwarding === false) {
-                return await fetchRelatedMessage(message, readyMessage);
+                readyMessage = await fetchRelatedMessage(message, readyMessage);
+                
+                return readyMessage;
             }
             // Если список вложенных сообщений есть то выполняем рекурсивный проход по нему
             if (message.forwardedMessagesId && message.forwardedMessagesId.length > 0) {
                 readyMessage!.forwardedMessages = []
                 let inner = message.forwardedMessagesId.map(async (entry) => {
+
                     return await transformMessages(entry.forwardedMessage);
                 });
+                readyMessage.relatedMessage = null;
+                readyMessage.replied = false;
+                readyMessage.isForwarding = true;
                 readyMessage!.forwardedMessages = await Promise.all(inner); // ожидание полезных данных в ответе БД
+                delete readyMessage!.forwardedMessagesId;  // Исключается ключ forwardedMessagesId (он бесполезен)
             }
             // Если массива с вложенными сообщениями нет, но есть об этом информация (т.е поле isForwading=true)
             // То выполняется запрос на получение вложенных сообщений с БД
             else {
-                const trx = await db.transaction();
                 try {
                     await message.load('forwardedMessagesId', (queryMain) => {
+                        queryMain.select('forwarded_message_id')
                         queryMain.preload('forwardedMessage', (queryMessage) => {
                             queryMessage
                                 .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'is_forwarding'])
                                 .preload('fromUser', (querFrom) => querFrom.select(['id', 'name', 'lastname', 'surname']))
                                 .preload('toUser', (queryTo) => queryTo.select(['id', 'name', 'lastname', 'surname']))
-                        })
+                        });
                     });
-                    trx.commit();
-                    return await transformMessages(message);
+                    // Если при попытке извлечения связанных сообщений не было получено результата, то связанных сообщений (даже если есть). Возвращается сообщение
+                    if(!message.forwardedMessagesId || message.forwardedMessagesId && !message.forwardedMessagesId.length) {
+                        readyMessage = message.toJSON();
+                        readyMessage.isForwarding = false;
+                        readyMessage.forwardedMessages = null;
+                        readyMessage.relatedMessage = null;
+                        readyMessage.replied = false;
+                        delete readyMessage.forwardedMessagesId;
+                        return readyMessage;
+                    }
+                    readyMessage! = await transformMessages(message);
                 } catch (err) {
-                    await trx.rollback();
-                    console.error('Ошибка извлечении forwardedMessages => utils/messages_utils:  uploadRecursiveForwardedMessages', err);
+                    console.error('Ошибка при извлечении forwardedMessages => utils/messages_utils:  uploadRecursiveForwardedMessages', err);
                     throw err;
                 }
             }

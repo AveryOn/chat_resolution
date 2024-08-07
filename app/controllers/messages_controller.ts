@@ -84,7 +84,6 @@ export default class MessagesController {
 
     // Получение сообщений чата
     async getMessages({ request, response, auth }: HttpContext) {
-        const trx = await db.transaction();
         try {
             // Аутентификация
             await auth.authenticate();
@@ -115,13 +114,11 @@ export default class MessagesController {
             else {
                 messages = await fetchMessagesBasicWithoutPaginator(validParams!.chat_id);
             }
-            await trx.commit();
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true), paginator },
                 data: { messages },
             })
         } catch (err) {
-            await trx.rollback();
             console.error(`messages_controller: getMessages  => ${err.data.preview}`);
             response.abort(err, err?.meta?.code ?? 500);
         }
@@ -241,15 +238,14 @@ export default class MessagesController {
                         infoBuilder.preload('relatedMessage', (relatedMsgBuilder) => {
                             relatedMsgBuilder
                                 .select(['id', 'from_user_id', 'to_user_id', 'chat_id', 'content', 'created_at', 'updated_at', 'is_forwarding', ])
-                                .where('chat_id', message.chatId);
+                                .where('chat_id', message.chatId)
                         });
                     });
-                    // если у собщения на которое отвечает reply-сообщение есть массив пересланных сообщений, то их нужно извлечь
-                    if(message.repliedInfoRow[0].relatedMessage.isForwarding === true) {
-                        let result = await fetchForwardedMessages([validData.replied_at]);
-                        if(result && result.length) {
-                            forwardedMessagesReplied = result[0].forwardedMessages;
-                        }
+                    const relatedMessages: Message[] = await Message.query().select('*').where('id', validData.replied_at).preload('forwardedMessagesId', (builder) => {
+                        builder.select('forwarded_message_id');
+                    });
+                    if(relatedMessages[0].forwardedMessagesId && relatedMessages[0].forwardedMessagesId.length) {
+                        forwardedMessagesReplied = relatedMessages[0].forwardedMessagesId;
                     }
                 } catch (err) {
                     console.error(`messages_controller: store[replied msg]  => `, err);
@@ -261,17 +257,21 @@ export default class MessagesController {
             }
             let readyMessage;
             readyMessage = message.toJSON();
-            if(message.repliedInfoRow && message.repliedInfoRow.length) {
+            if(message.repliedInfoRow && message.repliedInfoRow?.length) {
                 Reflect.deleteProperty(readyMessage, 'repliedInfoRow');
                 readyMessage.relatedMessage = message.repliedInfoRow[0].relatedMessage.toJSON();
                 if(forwardedMessagesReplied.length) {
-                    readyMessage.relatedMessage.forwardedMessages = forwardedMessagesReplied;
+                    readyMessage.relatedMessage.forwardedMessagesCount = forwardedMessagesReplied.length;
                 }
             } else {
                 readyMessage.relatedMessage = null;
             }
-            if (forwardedMessages!) {
+            if (forwardedMessages! && forwardedMessages!.length) {
+                forwardedMessages.sort((a, b) => a.id - b.id);
                 readyMessage.forwardedMessages = forwardedMessages;
+            } else {
+                readyMessage.forwardedMessages = null;
+                readyMessage.isForwarding = false;
             }
             response.send({
                 meta: { status: 'success', code: 200, url: request.url(true) },

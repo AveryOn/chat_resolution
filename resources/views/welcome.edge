@@ -1083,6 +1083,7 @@
                                 "toUserId": number,
                                 "fromUserId": number,
                                 "edited": boolean,
+                                "replied": boolean,
                                 "chat": {
                                     "id": number,
                                     "previewMessage": string | null,
@@ -1094,7 +1095,7 @@
                                 },
                                 "isForwarding": boolean,
                                 "forwardedMessages": null | [],
-                                "relatedMessage": {
+                                "relatedMessage": null | {
                                     "id": number,
                                     "fromUserId": number,
                                     "toUserId": number,
@@ -1102,8 +1103,9 @@
                                     "content": string,
                                     "createdAt": string,
                                     "updatedAt": string,
-                                    "isForwarding": boolean
-                                } | null,
+                                    "isForwarding": boolean,
+                                    "forwardedMessagesCount": number | null
+                                },
                                 "createdAt": string,
                                 "updatedAt": string | null
                             }
